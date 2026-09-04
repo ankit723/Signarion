@@ -1,0 +1,9 @@
+{
+	"id": "g7C3dW2j5S2E0g6",
+	"json": "{\"id\":\"g7C3dW2j5S2E0g6\",\"url\":\"https://www.techmorphers.com/register\",\"loadedUrl\":\"https://www.techmorphers.com/register\",\"uniqueKey\":\"https://www.techmorphers.com/register\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T10:05:35.092Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://www.techmorphers.com/register",
+	"url": "https://www.techmorphers.com/register"
+}

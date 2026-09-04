@@ -1,0 +1,14 @@
+import Redis from 'ioredis'
+
+const redis = new Redis(process.env.REDIS_URL, {
+    maxRetriesPerRequest: null,
+    retryStrategy(times) {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+    },
+})
+
+redis.on("connect", ()=>{console.log("redis connected")})
+redis.on("error", (err) => console.error("Redis Error:", err));
+
+export default redis

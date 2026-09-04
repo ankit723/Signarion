@@ -1,0 +1,5 @@
+1: Edit ICP option
+2: on clicking that a JSON EDITOR opens up
+
+3: Also during workspace creation and ICP creation, rather than directly creating and updating the USER ICP, first show the user there AI generated ICP in the same JSON EDITOR, so if that if they edit the JSON then the EDITED JSON will be stored and if not then there will be button Saying let AI Decide, and save the AI generated ICP Itself
+

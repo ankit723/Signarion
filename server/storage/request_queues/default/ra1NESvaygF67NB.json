@@ -1,0 +1,9 @@
+{
+	"id": "ra1NESvaygF67NB",
+	"json": "{\"id\":\"ra1NESvaygF67NB\",\"url\":\"https://www.techmorphers.com/about-us\",\"loadedUrl\":\"https://www.techmorphers.com/about-us\",\"uniqueKey\":\"https://www.techmorphers.com/about-us\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T10:05:21.339Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://www.techmorphers.com/about-us",
+	"url": "https://www.techmorphers.com/about-us"
+}

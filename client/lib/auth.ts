@@ -99,6 +99,33 @@ export const authApi = {
     }
   },
 
+  /**
+   * Partial profile update. Changing `email` or `password` revokes the current
+   * session server-side — the caller should sign the user out right after and
+   * send them back to login.
+   */
+  async updateAccount(patch: {
+    displayName?: string;
+    email?: string;
+    password?: string;
+  }): Promise<AuthUser> {
+    try {
+      const { data } = await api.patch<{ user: AuthUser }>("/auth/account-settings", patch);
+      return data.user;
+    } catch (err) {
+      throw new Error(apiError(err));
+    }
+  },
+
+  /** Permanently deletes the account. Blocked server-side while it still owns a workspace. */
+  async deleteAccount(): Promise<void> {
+    try {
+      await api.delete("/auth/account");
+    } catch (err) {
+      throw new Error(apiError(err));
+    }
+  },
+
   async forgotPassword(email: string): Promise<string> {
     try {
       const { data } = await api.post<{ message: string }>("/auth/forgot-password", {

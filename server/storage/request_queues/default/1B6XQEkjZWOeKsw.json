@@ -1,9 +1,0 @@
-{
-	"id": "1B6XQEkjZWOeKsw",
-	"json": "{\"id\":\"1B6XQEkjZWOeKsw\",\"url\":\"https://www.techmorphers.com/schedule-call\",\"loadedUrl\":\"https://www.techmorphers.com/schedule-call\",\"uniqueKey\":\"https://www.techmorphers.com/schedule-call\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T10:05:34.870Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://www.techmorphers.com/schedule-call",
-	"url": "https://www.techmorphers.com/schedule-call"
-}

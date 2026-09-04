@@ -1,0 +1,9 @@
+{
+	"id": "6gdJYnvzfsNEXxy",
+	"json": "{\"id\":\"6gdJYnvzfsNEXxy\",\"url\":\"https://claude.com/docs/claude-science/artifacts\",\"loadedUrl\":\"https://claude.com/docs/claude-science/artifacts\",\"uniqueKey\":\"https://claude.com/docs/claude-science/artifacts\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:35:37.592Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://claude.com/docs/claude-science/artifacts",
+	"url": "https://claude.com/docs/claude-science/artifacts"
+}

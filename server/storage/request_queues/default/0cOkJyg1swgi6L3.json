@@ -1,9 +1,0 @@
-{
-	"id": "0cOkJyg1swgi6L3",
-	"json": "{\"id\":\"0cOkJyg1swgi6L3\",\"url\":\"https://www.techmorphers.com/estimator\",\"loadedUrl\":\"https://www.techmorphers.com/estimator\",\"uniqueKey\":\"https://www.techmorphers.com/estimator\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T10:05:26.679Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://www.techmorphers.com/estimator",
-	"url": "https://www.techmorphers.com/estimator"
-}

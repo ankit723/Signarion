@@ -6,8 +6,9 @@ import mongoose from "mongoose";
 dotenv.config()
 
 import authRoutes from "./routes/auth.routes.js";
-import { getEmailQueueDetails } from "./controllers/queue.controller.js";
 import workspaceRoutes from "./routes/workspace.routes.js";
+import invitationRoutes from "./routes/invitation.routes.js";
+import queueRoutes from "./routes/queue.routes.js";
 
 const app = express()
 
@@ -28,11 +29,10 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get("/email", getEmailQueueDetails);
-
-
 app.use("/api/auth", authRoutes)
 app.use("/api/workspace", workspaceRoutes)
+app.use("/api/invitations", invitationRoutes)
+app.use("/api/admin/queues", queueRoutes)
 
 
 

@@ -1,0 +1,9 @@
+{
+	"id": "0Z7hYZxNNJFvwsW",
+	"json": "{\"id\":\"0Z7hYZxNNJFvwsW\",\"url\":\"https://claude.com/docs/claude-science/configuration-file-reference\",\"loadedUrl\":\"https://claude.com/docs/claude-science/configuration-file-reference\",\"uniqueKey\":\"https://claude.com/docs/claude-science/configuration-file-reference\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:35:46.290Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://claude.com/docs/claude-science/configuration-file-reference",
+	"url": "https://claude.com/docs/claude-science/configuration-file-reference"
+}

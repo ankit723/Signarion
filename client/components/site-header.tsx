@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogOutIcon } from "lucide-react";
+import { InboxIcon, LogOutIcon, SettingsIcon } from "lucide-react";
 
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
@@ -29,9 +29,12 @@ export function SiteHeader({ variant = "marketing" }: { variant?: "marketing" | 
                   Dashboard
                 </LinkButton>
               ) : (
-                <span className="hidden max-w-[20ch] truncate text-sm text-muted-foreground sm:inline">
-                  {user.email}
-                </span>
+                <>
+                  <LinkButton href="/account" size="sm" variant="ghost">
+                    <SettingsIcon className="size-4" />
+                    <span className="hidden sm:inline">Account</span>
+                  </LinkButton>
+                </>
               )}
               <Button type="button" variant="ghost" size="sm" onClick={logout}>
                 <LogOutIcon className="size-4" />

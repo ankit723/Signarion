@@ -1,7 +1,15 @@
 import OpenAI from 'openai';
 import { ICP_JSON_SCHEMA } from './icpJsonSchema.js';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
+// Lazy singleton — ESM hoists imports above app.js's dotenv.config(), so the
+// key isn't in process.env yet at module-load time. Build the client on first use.
+let _openai;
+function getOpenAI() {
+  if (!_openai) {
+    _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return _openai;
+}
 
 // System prompt enforcing strict persona logic
 const SYSTEM_PROMPT = `
@@ -32,7 +40,7 @@ function getUserPrompt(scrapedContent, websiteUrl) {
  * Sends scraped site content to OpenAI to get the complete structured ICP dataset
  */
 export async function generateICPFromScrapedData(scrapedContent, websiteUrl) {
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model: "gpt-4o",
     temperature: 0.2,
     messages: [

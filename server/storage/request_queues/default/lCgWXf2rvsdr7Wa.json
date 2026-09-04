@@ -1,0 +1,9 @@
+{
+	"id": "lCgWXf2rvsdr7Wa",
+	"json": "{\"id\":\"lCgWXf2rvsdr7Wa\",\"url\":\"https://claude.com/docs/claude-tag/admins/connections/datadog\",\"loadedUrl\":\"https://claude.com/docs/claude-tag/admins/connections/datadog\",\"uniqueKey\":\"https://claude.com/docs/claude-tag/admins/connections/datadog\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:38:47.118Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://claude.com/docs/claude-tag/admins/connections/datadog",
+	"url": "https://claude.com/docs/claude-tag/admins/connections/datadog"
+}

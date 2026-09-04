@@ -1,10 +1,13 @@
 import { auth } from "../utils/firebase.js";
 import redis from "../utils/redis.js";
 import User from "../models/user.model.js";
+import Workspace from "../models/workspace.model.js";
+import Invitation from "../models/invitation.model.js";
 import emailQueue from "../utils/emailQueue.js";
 
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
 const SESSION_TTL_SECONDS = 86400;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const actionCodeSettings = {
   url: `${CLIENT_URL}/auth/action`,
@@ -192,16 +195,31 @@ const verify = async (req, res) => {
 };
 
 const accountSettings = async (req, res) => {
-  const { displayName, email, password } = req.body;
+  const { displayName, email, password } = req.body ?? {};
   const uid = req.user.uid;
 
   const updateFields = {};
-  if (displayName !== undefined) updateFields.displayName = displayName;
+  if (displayName !== undefined) {
+    const trimmed = String(displayName).trim();
+    if (!trimmed) {
+      return res.status(400).json({ error: "Display name can't be empty." });
+    }
+    updateFields.displayName = trimmed;
+  }
   if (email !== undefined) {
-    updateFields.email = email;
+    const trimmed = String(email).trim().toLowerCase();
+    if (!EMAIL_RE.test(trimmed)) {
+      return res.status(400).json({ error: "Enter a valid email address." });
+    }
+    updateFields.email = trimmed;
     updateFields.emailVerified = false; // Re-trigger verification on email change
   }
-  if (password !== undefined) updateFields.password = password;
+  if (password !== undefined) {
+    if (String(password).length < 8) {
+      return res.status(400).json({ error: "Use at least 8 characters for your password." });
+    }
+    updateFields.password = password;
+  }
 
   if (Object.keys(updateFields).length === 0) {
     return res.status(400).json({ error: "No fields provided for update" });
@@ -210,12 +228,43 @@ const accountSettings = async (req, res) => {
   try {
     const updatedUser = await auth.updateUser(uid, updateFields);
 
+    // Keep the Mongo profile in sync — `me` and every workspace/member lookup
+    // read displayName/email from here, not from Firebase directly.
+    const mongoPatch = {};
+    if (updateFields.displayName !== undefined) mongoPatch.displayName = updateFields.displayName;
+    if (updateFields.email !== undefined) {
+      mongoPatch.email = updateFields.email;
+      mongoPatch.isEmailVerified = false;
+    }
+    if (Object.keys(mongoPatch).length > 0) {
+      await User.updateOne({ firebaseUid: uid }, mongoPatch);
+    }
+
     // Invalidate Redis caches to maintain consistency across services
     await redis.del(`session:user:${uid}`);
 
-    // Revoke all existing refresh tokens if password or email changed
+    // Revoke all existing refresh tokens if password or email changed — the
+    // client signs the user out right after and asks them to sign back in.
     if (password || email) {
       await auth.revokeRefreshTokens(uid);
+    }
+
+    // A changed email needs its own verification link.
+    if (updateFields.email) {
+      try {
+        const firebaseLink = await auth.generateEmailVerificationLink(
+          updateFields.email,
+          actionCodeSettings,
+        );
+        const verificationLink = buildAppActionLink(firebaseLink, "verifyEmail");
+        await emailQueue.add("sendEmail", {
+          to: updateFields.email,
+          subject: "Verify your new email",
+          html: `<p>Confirm your new email address by clicking <a href="${verificationLink}">this link</a>.</p>`,
+        });
+      } catch (linkError) {
+        console.error("Failed to send re-verification email:", linkError.message);
+      }
     }
 
     return res.status(200).json({
@@ -228,8 +277,51 @@ const accountSettings = async (req, res) => {
       },
     });
   } catch (error) {
+    if (error.code === "auth/email-already-exists") {
+      return res.status(409).json({ error: "An account with that email already exists." });
+    }
+    if (error.code === "auth/invalid-password") {
+      return res.status(400).json({ error: "Password must be at least 6 characters." });
+    }
     return res.status(500).json({ error: error.message });
   }
 };
 
-export { register, login, me, forgotPassword, verify, accountSettings };
+/**
+ * Permanently deletes the signed-in user. Blocked while they still own a
+ * workspace (deleting those first avoids orphaning other members' access);
+ * membership on other people's workspaces is cleaned up automatically.
+ */
+const deleteAccount = async (req, res) => {
+  const uid = req.user.uid;
+
+  try {
+    const ownedCount = await Workspace.countDocuments({ owner: uid });
+    if (ownedCount > 0) {
+      return res.status(409).json({
+        error: `You still own ${ownedCount} workspace${ownedCount === 1 ? "" : "s"}. Delete ${
+          ownedCount === 1 ? "it" : "them"
+        } first, then delete your account.`,
+      });
+    }
+
+    // Leave every workspace where this account is a member.
+    await Workspace.updateMany({ members: uid }, { $pull: { members: uid } });
+
+    const dbUser = await User.findOne({ firebaseUid: uid }).select("email").lean();
+    if (dbUser?.email) {
+      // Pending invites addressed to this email no longer lead anywhere.
+      await Invitation.deleteMany({ email: dbUser.email.toLowerCase(), status: "pending" });
+    }
+
+    await User.deleteOne({ firebaseUid: uid });
+    await redis.del(`session:user:${uid}`);
+    await auth.deleteUser(uid);
+
+    return res.status(200).json({ message: "Account deleted." });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+export { register, login, me, forgotPassword, verify, accountSettings, deleteAccount };

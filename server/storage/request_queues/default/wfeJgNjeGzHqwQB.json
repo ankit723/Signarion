@@ -1,0 +1,9 @@
+{
+	"id": "wfeJgNjeGzHqwQB",
+	"json": "{\"id\":\"wfeJgNjeGzHqwQB\",\"url\":\"https://claude.com/docs/claude-science/changelog\",\"loadedUrl\":\"https://claude.com/docs/claude-science/changelog\",\"uniqueKey\":\"https://claude.com/docs/claude-science/changelog\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:35:40.209Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://claude.com/docs/claude-science/changelog",
+	"url": "https://claude.com/docs/claude-science/changelog"
+}

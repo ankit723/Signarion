@@ -1,9 +1,0 @@
-{
-	"id": "iUf6EY920TK1mgL",
-	"json": "{\"id\":\"iUf6EY920TK1mgL\",\"url\":\"https://www.techmorphers.com/case-study\",\"loadedUrl\":\"https://www.techmorphers.com/case-study\",\"uniqueKey\":\"https://www.techmorphers.com/case-study\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T10:05:30.192Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://www.techmorphers.com/case-study",
-	"url": "https://www.techmorphers.com/case-study"
-}

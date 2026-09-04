@@ -1,0 +1,9 @@
+{
+	"id": "ozAoihPCaJJgNhA",
+	"json": "{\"id\":\"ozAoihPCaJJgNhA\",\"url\":\"https://claude.com/docs/claude-science/how-claude-science-works-with-your-data\",\"loadedUrl\":\"https://claude.com/docs/claude-science/how-claude-science-works-with-your-data\",\"uniqueKey\":\"https://claude.com/docs/claude-science/how-claude-science-works-with-your-data\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:35:53.291Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://claude.com/docs/claude-science/how-claude-science-works-with-your-data",
+	"url": "https://claude.com/docs/claude-science/how-claude-science-works-with-your-data"
+}

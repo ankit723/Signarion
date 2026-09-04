@@ -1,0 +1,9 @@
+{
+	"id": "URYI8virVKKVVZF",
+	"json": "{\"id\":\"URYI8virVKKVVZF\",\"url\":\"https://claude.com/docs/claude-science/network-requirements\",\"loadedUrl\":\"https://claude.com/docs/claude-science/network-requirements\",\"uniqueKey\":\"https://claude.com/docs/claude-science/network-requirements\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:35:59.276Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://claude.com/docs/claude-science/network-requirements",
+	"url": "https://claude.com/docs/claude-science/network-requirements"
+}

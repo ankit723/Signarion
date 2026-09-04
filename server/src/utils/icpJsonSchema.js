@@ -216,6 +216,42 @@ export const ICP_JSON_SCHEMA = {
           },
           required: ["category_name", "key_takeaway", "supporting_details"]
         }
+      },
+
+      // -----------------------------------------------------------------
+      // 7. BRAND / VISUAL IDENTITY OF THE ANALYSED WEBSITE
+      // (favicon + colours are filled from the live site by the crawler;
+      //  the rest is inferred from what the site looks like)
+      // -----------------------------------------------------------------
+      brand_identity: {
+        type: "object",
+        properties: {
+          favicon_url: { type: "string", description: "Absolute URL of the site favicon" },
+          logo_url: { type: "string", description: "Absolute URL of the primary logo image" },
+          primary_color: { type: "string", description: "Primary brand colour as a CSS colour (hex like #1e40af preferred)" },
+          secondary_color: { type: "string" },
+          accent_color: { type: "string" },
+          background_color: { type: "string" },
+          text_color: { type: "string" },
+          theme: { type: "string", description: "Overall look, e.g. 'light', 'dark', 'light with dark hero'" },
+          design_style: {
+            type: "array",
+            description: "Style descriptors, e.g. 'minimal', 'corporate', 'brutalist', 'glassmorphism', 'playful'",
+            items: { type: "string" }
+          },
+          typography: { type: "string", description: "Primary font family / typographic feel" },
+          logo_description: { type: "string", description: "Short description of the logo mark" }
+        },
+        required: [
+          "favicon_url",
+          "primary_color",
+          "accent_color",
+          "background_color",
+          "text_color",
+          "theme",
+          "design_style",
+          "typography"
+        ]
       }
     },
     required: [
@@ -224,7 +260,8 @@ export const ICP_JSON_SCHEMA = {
       "buyer_personas",
       "technical_and_buying_signals",
       "outreach_strategy",
-      "custom_ai_insights"
+      "custom_ai_insights",
+      "brand_identity"
     ]
   }
 };

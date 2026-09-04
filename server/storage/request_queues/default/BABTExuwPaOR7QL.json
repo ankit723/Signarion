@@ -1,0 +1,9 @@
+{
+	"id": "BABTExuwPaOR7QL",
+	"json": "{\"id\":\"BABTExuwPaOR7QL\",\"url\":\"https://claude.com/docs/claude-science/glossary\",\"loadedUrl\":\"https://claude.com/docs/claude-science/glossary\",\"uniqueKey\":\"https://claude.com/docs/claude-science/glossary\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:35:51.776Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://claude.com/docs/claude-science/glossary",
+	"url": "https://claude.com/docs/claude-science/glossary"
+}

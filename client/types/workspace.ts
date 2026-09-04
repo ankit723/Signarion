@@ -6,6 +6,32 @@
 
 export type WorkspaceRole = "owner" | "member";
 
+export interface WorkspaceMember {
+  uid: string;
+  email: string | null;
+  displayName: string;
+  role: WorkspaceRole;
+}
+
+/** Minimal owner identity, attached to workspaces the current user is a member of. */
+export interface WorkspaceOwnerInfo {
+  email: string | null;
+  displayName: string;
+}
+
+export type IcpJobStatus = "idle" | "queued" | "running" | "ready" | "failed";
+
+export interface IcpJob {
+  status: IcpJobStatus;
+  domain?: string | null;
+  stage?: string | null;
+  /** The generated ICP awaiting review — only present when status is "ready". */
+  draft?: Icp | null;
+  error?: string | null;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+}
+
 export interface Workspace {
   _id: string;
   name: string;
@@ -15,10 +41,15 @@ export interface Workspace {
   connectedEmails?: string[];
   connectedLinkedin?: string | null;
   icp?: Icp | null;
+  icpJob?: IcpJob | null;
   createdAt?: string;
   updatedAt?: string;
+  /** Present when `role === "member"` — who owns this workspace. */
+  ownerInfo?: WorkspaceOwnerInfo | null;
   /** Added client-side from which bucket the API returned it in. */
   role: WorkspaceRole;
+  /** Resolved member list — only present after a details / member call. */
+  resolvedMembers?: WorkspaceMember[];
 }
 
 export interface IcpPricingInsights {
@@ -85,6 +116,20 @@ export interface IcpCustomInsight {
   supporting_details?: string[];
 }
 
+export interface IcpBrandIdentity {
+  favicon_url?: string;
+  logo_url?: string;
+  primary_color?: string;
+  secondary_color?: string;
+  accent_color?: string;
+  background_color?: string;
+  text_color?: string;
+  theme?: string;
+  design_style?: string[];
+  typography?: string;
+  logo_description?: string;
+}
+
 export interface Icp {
   company_overview?: IcpCompanyOverview;
   target_market_firmographics?: IcpFirmographics;
@@ -92,6 +137,7 @@ export interface Icp {
   technical_and_buying_signals?: IcpBuyingSignals;
   outreach_strategy?: IcpOutreachStrategy;
   custom_ai_insights?: IcpCustomInsight[];
+  brand_identity?: IcpBrandIdentity;
 }
 
 /** `true` when the workspace has a generated ICP worth rendering. */

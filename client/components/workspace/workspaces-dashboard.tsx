@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CircleAlertIcon,
   PlusIcon,
@@ -26,12 +26,15 @@ const ONBOARDED_KEY = "sbo.ws.onboarded";
 
 export function WorkspacesDashboard() {
   const { user, resync } = useAuth();
-  const { items, status, error, refreshing, refresh } = useWorkspaces();
+  const { items, status, error, refreshing, refresh, getCached } = useWorkspaces();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [domainFor, setDomainFor] = useState<Workspace | null>(null);
   const [resending, setResending] = useState(false);
   const onboardedRef = useRef(false);
+
+  const owned = useMemo(() => items.filter((w) => w.role === "owner"), [items]);
+  const shared = useMemo(() => items.filter((w) => w.role === "member"), [items]);
 
   const resendVerification = async () => {
     setResending(true);
@@ -158,13 +161,29 @@ export function WorkspacesDashboard() {
           <EmptyState onCreate={() => setCreateOpen(true)} />
         </Reveal>
       ) : (
-        <Grid>
-          {items.map((w, i) => (
-            <Reveal key={w._id} delay={Math.min(i, 8) * 55}>
-              <WorkspaceCard workspace={w} />
-            </Reveal>
-          ))}
-        </Grid>
+        <div className="space-y-10">
+          <WorkspaceSection title="Your workspaces" items={owned}>
+            {shared.length > 0 ? (
+              <Reveal className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
+                <p className="text-sm text-muted-foreground">
+                  You don&apos;t have any workspaces of your own yet.
+                </p>
+                <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
+                  <PlusIcon />
+                  New workspace
+                </Button>
+              </Reveal>
+            ) : null}
+          </WorkspaceSection>
+
+          {shared.length > 0 ? (
+            <WorkspaceSection
+              title="Shared with you"
+              subtitle="Workspaces other people invited you to."
+              items={shared}
+            />
+          ) : null}
+        </div>
       )}
 
       <WorkspaceFormDialog
@@ -180,7 +199,8 @@ export function WorkspacesDashboard() {
         <AddDomainDialog
           open={Boolean(domainFor)}
           onOpenChange={(open) => !open && setDomainFor(null)}
-          workspace={domainFor}
+          /* live copy so the poll-driven icpJob updates reach the dialog */
+          workspace={getCached(domainFor._id) ?? domainFor}
         />
       ) : null}
     </div>
@@ -189,6 +209,43 @@ export function WorkspacesDashboard() {
 
 function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid gap-4 sm:grid-cols-2">{children}</div>;
+}
+
+function WorkspaceSection({
+  title,
+  subtitle,
+  items,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  items: Workspace[];
+  /** Rendered instead of the grid when `items` is empty. */
+  children?: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-4">
+      <Reveal className="flex items-baseline gap-2">
+        <h2 className="font-heading text-base font-semibold tracking-tight">{title}</h2>
+        <span className="font-mono text-xs text-muted-foreground">{items.length}</span>
+        {subtitle ? (
+          <span className="hidden text-xs text-muted-foreground sm:inline">· {subtitle}</span>
+        ) : null}
+      </Reveal>
+
+      {items.length === 0 ? (
+        children
+      ) : (
+        <Grid>
+          {items.map((w, i) => (
+            <Reveal key={w._id} delay={Math.min(i, 8) * 55}>
+              <WorkspaceCard workspace={w} />
+            </Reveal>
+          ))}
+        </Grid>
+      )}
+    </section>
+  );
 }
 
 function EmptyState({ onCreate }: { onCreate: () => void }) {

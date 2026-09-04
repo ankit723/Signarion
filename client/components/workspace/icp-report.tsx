@@ -10,25 +10,33 @@ import {
   LayersIcon,
   LightbulbIcon,
   MapPinIcon,
+  PaletteIcon,
   RadarIcon,
   SendIcon,
   ShieldAlertIcon,
   SparklesIcon,
   TargetIcon,
   TrendingUpIcon,
+  TypeIcon,
   UsersIcon,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { brandVars, safeColor, safeImageUrl } from "@/lib/brand";
 import { ArcField } from "@/components/arc-field";
 import { Badge } from "@/components/ui/badge";
-import type { Icp, IcpPersona } from "@/types/workspace";
+import type { Icp, IcpBrandIdentity, IcpPersona } from "@/types/workspace";
 
 /* ------------------------------------------------------------------ */
 /* small building blocks                                                */
 /* ------------------------------------------------------------------ */
 
 const nonEmpty = (v?: string[] | null): string[] => (v ?? []).filter((s) => s && s.trim());
+
+// Accent + tint that fall back to the app's primary when the workspace has no
+// brand colour (the vars come from `brandVars` on the report root).
+const ACCENT = "var(--ws-accent, var(--primary))";
+const TINT = "var(--ws-tint, color-mix(in oklab, var(--primary), transparent 88%))";
 
 function Section({
   icon: Icon,
@@ -49,7 +57,10 @@ function Section({
       style={{ "--tw-animation-delay": `${Math.min(index, 6) * 60}ms` } as React.CSSProperties}
     >
       <div className="mb-4 flex items-center gap-3">
-        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+        <span
+          className="grid size-8 shrink-0 place-items-center rounded-lg"
+          style={{ backgroundColor: TINT, color: ACCENT }}
+        >
           <Icon className="size-4" />
         </span>
         <div>
@@ -165,6 +176,7 @@ export function IcpReport({ icp }: { icp: Icp }) {
   const custom = (icp.custom_ai_insights ?? []).filter((c) => c && (c.category_name || c.key_takeaway));
   const geo = fm.target_geographies ?? {};
   const pricing = co.pricing_model_insights ?? {};
+  const brand = icp.brand_identity ?? {};
 
   const stats = [
     { label: "Target industries", value: nonEmpty(fm.primary_industries).length, icon: TargetIcon },
@@ -176,11 +188,14 @@ export function IcpReport({ icp }: { icp: Icp }) {
   let idx = 0;
 
   return (
-    <div className="space-y-9">
+    <div className="space-y-9" style={brandVars({ icp })}>
       {/* Hero */}
       <div className="dark relative overflow-hidden rounded-2xl bg-background p-6 text-foreground ring-1 ring-foreground/10 sm:p-8">
         <div className="pointer-events-none absolute inset-0 opacity-70 [background:radial-gradient(120%_90%_at_15%_0%,color-mix(in_oklch,var(--primary),transparent_80%),transparent_55%)]" />
-        <ArcField className="pointer-events-none absolute -right-16 -top-10 size-72 text-primary/20" />
+        <ArcField
+          className="pointer-events-none absolute -right-16 -top-10 size-72"
+          style={{ color: "var(--ws-accent, var(--primary))", opacity: 0.22 }}
+        />
         <div className="relative space-y-4">
           <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground">
             <SparklesIcon className="size-3.5 text-primary" />
@@ -214,6 +229,28 @@ export function IcpReport({ icp }: { icp: Icp }) {
             </div>
           ))}
         </div>
+      ) : null}
+
+      {/* Brand & design */}
+      {(nonEmpty([
+        brand.primary_color,
+        brand.accent_color,
+        brand.secondary_color,
+        brand.background_color,
+        brand.text_color,
+      ] as string[]).length > 0 ||
+        brand.favicon_url ||
+        brand.theme ||
+        nonEmpty(brand.design_style).length > 0 ||
+        brand.typography) ? (
+        <Section
+          icon={PaletteIcon}
+          title="Brand & design"
+          subtitle="How the site looks — this themes the workspace"
+          index={idx++}
+        >
+          <BrandPanel brand={brand} />
+        </Section>
       ) : null}
 
       {/* Offering */}
@@ -447,6 +484,85 @@ export function IcpReport({ icp }: { icp: Icp }) {
         </Section>
       ) : null}
     </div>
+  );
+}
+
+function BrandPanel({ brand }: { brand: IcpBrandIdentity }) {
+  const favicon = safeImageUrl(brand.favicon_url);
+  const swatches = (
+    [
+      ["Primary", brand.primary_color],
+      ["Accent", brand.accent_color],
+      ["Secondary", brand.secondary_color],
+      ["Background", brand.background_color],
+      ["Text", brand.text_color],
+    ] as const
+  )
+    .map(([name, raw]) => ({ name, color: safeColor(raw), raw }))
+    .filter((s) => s.color);
+
+  return (
+    <Panel className="space-y-5">
+      <div className="flex flex-wrap items-center gap-4">
+        {favicon ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={favicon}
+            alt=""
+            width={40}
+            height={40}
+            className="size-10 rounded-lg bg-muted object-contain p-1 ring-1 ring-foreground/10"
+          />
+        ) : null}
+        <div className="flex flex-wrap gap-2 text-xs">
+          {brand.theme ? (
+            <Badge variant="secondary" className="font-mono uppercase tracking-wide">
+              {brand.theme}
+            </Badge>
+          ) : null}
+          {brand.typography ? (
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-muted-foreground">
+              <TypeIcon className="size-3" />
+              {brand.typography}
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      {swatches.length > 0 ? (
+        <div className="flex flex-wrap gap-3">
+          {swatches.map((s) => (
+            <div key={s.name} className="flex items-center gap-2">
+              <span
+                className="size-8 rounded-lg ring-1 ring-foreground/15"
+                style={{ backgroundColor: s.color as string }}
+              />
+              <div className="leading-tight">
+                <p className="text-xs font-medium">{s.name}</p>
+                <p className="font-mono text-[0.7rem] text-muted-foreground">{s.raw}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {nonEmpty(brand.design_style).length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {nonEmpty(brand.design_style).map((d) => (
+            <span
+              key={d}
+              className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-foreground ring-1 ring-inset ring-primary/20"
+            >
+              {d}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {brand.logo_description ? (
+        <p className="text-sm text-muted-foreground text-pretty">{brand.logo_description}</p>
+      ) : null}
+    </Panel>
   );
 }
 

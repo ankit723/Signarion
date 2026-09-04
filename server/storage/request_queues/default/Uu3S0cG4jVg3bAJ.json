@@ -1,0 +1,9 @@
+{
+	"id": "Uu3S0cG4jVg3bAJ",
+	"json": "{\"id\":\"Uu3S0cG4jVg3bAJ\",\"url\":\"https://claude.com/docs/claude-science/get-started\",\"loadedUrl\":\"https://claude.com/docs/claude-science/get-started\",\"uniqueKey\":\"https://claude.com/docs/claude-science/get-started\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:35:51.328Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://claude.com/docs/claude-science/get-started",
+	"url": "https://claude.com/docs/claude-science/get-started"
+}

@@ -4,16 +4,7 @@
  * so auth headers + 401 refresh are handled for us.
  */
 import api, { apiError } from "@/lib/api";
-import type { Icp, Workspace } from "@/types/workspace";
-
-export interface DomainAnalysis {
-  workspace: Workspace;
-  /** The AI draft. Not saved yet — the user reviews/edits it, then it's saved. */
-  generatedIcp: Icp;
-}
-
-/** Domain analysis crawls the site + runs the ICP model — it needs a long leash. */
-const DOMAIN_ANALYSIS_TIMEOUT = 240_000;
+import type { Icp, IcpJob, Workspace, WorkspaceMember } from "@/types/workspace";
 
 interface ListResponse {
   ownersWorkspaces?: Workspace[];
@@ -42,9 +33,32 @@ export const workspaceApi = {
 
   async get(id: string): Promise<Workspace> {
     try {
-      const { data } = await api.get<{ workspace: Workspace | null }>(`/workspace/${id}`);
+      const { data } = await api.get<{
+        workspace: Workspace | null;
+        members?: WorkspaceMember[];
+      }>(`/workspace/${id}`);
       if (!data.workspace) throw new Error("Workspace not found.");
-      return { ...data.workspace, role: data.workspace.role ?? "owner" };
+      return {
+        ...data.workspace,
+        role: data.workspace.role ?? "owner",
+        resolvedMembers: data.members ?? [],
+      };
+    } catch (err) {
+      throw new Error(apiError(err));
+    }
+  },
+
+  /** Invite by email — see `@/lib/invitations` for the invitation lifecycle. */
+  async removeMember(id: string, memberUid: string): Promise<Workspace> {
+    try {
+      const { data } = await api.delete<{ workspace: Workspace; members: WorkspaceMember[] }>(
+        `/workspace/${id}/members/${encodeURIComponent(memberUid)}`
+      );
+      return {
+        ...data.workspace,
+        role: data.workspace.role ?? "owner",
+        resolvedMembers: data.members ?? [],
+      };
     } catch (err) {
       throw new Error(apiError(err));
     }
@@ -83,20 +97,35 @@ export const workspaceApi = {
   },
 
   /**
-   * Attach a domain and run crawl + ICP generation. Resolves with the updated
-   * workspace (domain saved) and the AI ICP draft — which is NOT persisted yet.
+   * Kick off background domain analysis. Returns fast — the crawl + model run on
+   * the server and write to `workspace.icpJob`; poll `getIcpJob` for progress.
    */
-  async addDomain(id: string, domain: string): Promise<DomainAnalysis> {
+  async startAnalysis(id: string, domain: string): Promise<Workspace> {
     try {
-      const { data } = await api.put<{ workspace: Workspace; generatedIcp?: Icp }>(
-        `/workspace/${id}`,
-        { domain: normalizeDomain(domain) },
-        { timeout: DOMAIN_ANALYSIS_TIMEOUT }
-      );
-      return {
-        workspace: { ...data.workspace, role: data.workspace.role ?? "owner" },
-        generatedIcp: (data.generatedIcp ?? {}) as Icp,
-      };
+      const { data } = await api.put<{ workspace: Workspace }>(`/workspace/${id}`, {
+        domain: normalizeDomain(domain),
+      });
+      return { ...data.workspace, role: data.workspace.role ?? "owner" };
+    } catch (err) {
+      throw new Error(apiError(err));
+    }
+  },
+
+  /** Poll the running analysis (light — no draft in the list / details payloads). */
+  async getIcpJob(id: string): Promise<IcpJob> {
+    try {
+      const { data } = await api.get<{ icpJob: IcpJob }>(`/workspace/${id}/icp-job`);
+      return data.icpJob ?? { status: "idle" };
+    } catch (err) {
+      throw new Error(apiError(err));
+    }
+  },
+
+  /** Throw away a finished / failed draft (or cancel a queued job). */
+  async discardIcpJob(id: string): Promise<Workspace> {
+    try {
+      const { data } = await api.delete<{ workspace: Workspace }>(`/workspace/${id}/icp-job`);
+      return { ...data.workspace, role: data.workspace.role ?? "owner" };
     } catch (err) {
       throw new Error(apiError(err));
     }

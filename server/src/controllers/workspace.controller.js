@@ -1,7 +1,6 @@
 import User from "../models/user.model.js";
 import Workspace from "../models/workspace.model.js";
-import { generateICPFromScrapedData } from "../utils/icpGenerator.js";
-import { crawlEntireWebsite } from "../utils/scraper.js";
+import { enqueueIcpJob, icpQueue } from "../utils/icpQueue.js";
 
 /** Owner or member (all are Firebase UID strings from req.user.uid). */
 const canAccess = (workspace, uid) =>
@@ -16,16 +15,61 @@ const notFoundOr500 = (res, error) => {
     return res.status(500).json({ error: error.message });
 };
 
+const IDLE_JOB = {
+    status: "idle",
+    domain: null,
+    stage: null,
+    draft: null,
+    error: null,
+    startedAt: null,
+    finishedAt: null,
+};
+
+/** Resolve owner + member Firebase UIDs into { uid, email, displayName, role }. */
+const resolveMembers = async (workspace) => {
+    const uids = [workspace.owner, ...(workspace.members ?? [])];
+    const users = await User.find({ firebaseUid: { $in: uids } })
+        .select("firebaseUid email displayName")
+        .lean();
+    const byUid = new Map(users.map((u) => [u.firebaseUid, u]));
+    return uids.map((uid) => {
+        const u = byUid.get(uid);
+        return {
+            uid,
+            email: u?.email ?? null,
+            displayName: u?.displayName ?? "",
+            role: uid === workspace.owner ? "owner" : "member",
+        };
+    });
+};
+
 const getUserWorkspaces = async (req, res) => {
     try {
         const uid = req.user.uid;
 
+        // The draft can be large — the list doesn't need it (only the poll does).
         const [ownersWorkspaces, memberWorkspaces] = await Promise.all([
-            Workspace.find({ owner: uid }).sort({ createdAt: -1 }),
-            Workspace.find({ members: uid }).sort({ createdAt: -1 }),
+            Workspace.find({ owner: uid }).select("-icpJob.draft").sort({ createdAt: -1 }).lean(),
+            Workspace.find({ members: uid }).select("-icpJob.draft").sort({ createdAt: -1 }).lean(),
         ]);
 
-        res.status(200).json({ ownersWorkspaces, memberWorkspaces });
+        // The dashboard shows who owns a shared workspace — resolve those owners.
+        const ownerUids = [...new Set(memberWorkspaces.map((w) => w.owner))];
+        const owners = ownerUids.length
+            ? await User.find({ firebaseUid: { $in: ownerUids } })
+                  .select("firebaseUid email displayName")
+                  .lean()
+            : [];
+        const ownerByUid = new Map(owners.map((u) => [u.firebaseUid, u]));
+        const memberWorkspacesWithOwner = memberWorkspaces.map((w) => ({
+            ...w,
+            ownerInfo: {
+                email: ownerByUid.get(w.owner)?.email ?? null,
+                displayName: ownerByUid.get(w.owner)?.displayName ?? "",
+            },
+        }));
+
+        res.status(200).json({ ownersWorkspaces, memberWorkspaces: memberWorkspacesWithOwner });
     } catch (error) {
         console.log(error);
         res.status(500).json({ error: error.message });
@@ -67,7 +111,39 @@ const getWorkspaceDetails = async (req, res) => {
         if (!canAccess(workspace, req.user.uid)) {
             return res.status(403).json({ error: "You don't have access to this workspace" });
         }
-        res.status(200).json({ workspace });
+        const members = await resolveMembers(workspace);
+        res.status(200).json({ workspace, members });
+    } catch (error) {
+        return notFoundOr500(res, error);
+    }
+};
+
+const removeMember = async (req, res) => {
+    try {
+        const targetUid = req.params.memberUid;
+
+        const workspace = await Workspace.findById(req.params.workspaceId);
+        if (!workspace) {
+            return res.status(404).json({ error: "Workspace not found" });
+        }
+        // The owner can remove anyone; a member can remove only themselves.
+        const isOwner = workspace.owner === req.user.uid;
+        if (!isOwner && targetUid !== req.user.uid) {
+            return res.status(403).json({ error: "Only the owner can remove other members" });
+        }
+        if (targetUid === workspace.owner) {
+            return res.status(400).json({ error: "The owner can't be removed" });
+        }
+
+        workspace.members = (workspace.members ?? []).filter((m) => m !== targetUid);
+        await workspace.save();
+        await User.updateOne(
+            { firebaseUid: targetUid },
+            { $pull: { workspaces: workspace._id } },
+        );
+
+        const members = await resolveMembers(workspace);
+        res.status(200).json({ message: "Member removed", workspace, members });
     } catch (error) {
         return notFoundOr500(res, error);
     }
@@ -104,7 +180,13 @@ const updateWorkspace = async (req, res) => {
         }
 
         Object.assign(workspace, patch);
-        if ("icp" in patch) workspace.markModified("icp"); // Mixed path needs an explicit nudge
+        if ("icp" in patch) {
+            workspace.markModified("icp"); // Mixed path needs an explicit nudge
+            // Saving the reviewed ICP clears the "ready to review" draft.
+            if (workspace.icpJob?.status === "ready") {
+                workspace.icpJob = { ...IDLE_JOB };
+            }
+        }
         await workspace.save();
 
         res.status(200).json({ message: "Workspace updated", workspace });
@@ -113,7 +195,11 @@ const updateWorkspace = async (req, res) => {
     }
 };
 
-const addDomain = async (req, res) => {
+/**
+ * Start (or restart) domain analysis. Returns immediately — the crawl + model
+ * run on a BullMQ worker and write the result to `workspace.icpJob`.
+ */
+const startAnalysis = async (req, res) => {
     try {
         const rawDomain = (req.body?.domain ?? "").trim();
         if (!rawDomain) {
@@ -121,12 +207,19 @@ const addDomain = async (req, res) => {
         }
 
         const workspaceId = req.params.workspaceId;
-        const existing = await Workspace.findById(workspaceId);
-        if (!existing) {
+        const workspace = await Workspace.findById(workspaceId);
+        if (!workspace) {
             return res.status(404).json({ error: "Workspace not found" });
         }
-        if (!canAccess(existing, req.user.uid)) {
+        if (!canAccess(workspace, req.user.uid)) {
             return res.status(403).json({ error: "You don't have access to this workspace" });
+        }
+
+        const current = workspace.icpJob?.status;
+        if (current === "queued" || current === "running") {
+            return res
+                .status(409)
+                .json({ error: "An analysis is already in progress", workspace });
         }
 
         const domain = rawDomain
@@ -136,18 +229,69 @@ const addDomain = async (req, res) => {
             .split("/")[0]
             .split("?")[0];
 
-        const crawl = await crawlEntireWebsite(`https://${domain}`, { maxPages: 25 });
-        const generatedIcp = await generateICPFromScrapedData(crawl.aggregatedContent, domain);
+        workspace.trackedDomain = domain;
+        workspace.icpJob = {
+            status: "queued",
+            domain,
+            stage: "Queued",
+            draft: null,
+            error: null,
+            startedAt: new Date(),
+            finishedAt: null,
+        };
+        await workspace.save();
 
-        // Persist the domain, but NOT the ICP — the client shows the draft in a
-        // JSON editor first and saves it (as-is or edited) via PATCH /:id { icp }.
-        const workspace = await Workspace.findByIdAndUpdate(
-            workspaceId,
-            { trackedDomain: domain },
-            { new: true },
+        await enqueueIcpJob(workspaceId, domain);
+
+        res.status(202).json({ message: "Analysis started", workspace });
+    } catch (error) {
+        return notFoundOr500(res, error);
+    }
+};
+
+/** Lightweight poll target for the running analysis. */
+const getIcpJob = async (req, res) => {
+    try {
+        const workspace = await Workspace.findById(req.params.workspaceId).select(
+            "owner members icpJob",
         );
+        if (!workspace) {
+            return res.status(404).json({ error: "Workspace not found" });
+        }
+        if (!canAccess(workspace, req.user.uid)) {
+            return res.status(403).json({ error: "You don't have access to this workspace" });
+        }
+        res.status(200).json({ icpJob: workspace.icpJob ?? { ...IDLE_JOB } });
+    } catch (error) {
+        return notFoundOr500(res, error);
+    }
+};
 
-        res.status(200).json({ message: "Domain analyzed", workspace, generatedIcp });
+/** Drop a finished/failed draft (or cancel a still-queued job). */
+const discardIcpJob = async (req, res) => {
+    try {
+        const workspace = await Workspace.findById(req.params.workspaceId);
+        if (!workspace) {
+            return res.status(404).json({ error: "Workspace not found" });
+        }
+        if (!canAccess(workspace, req.user.uid)) {
+            return res.status(403).json({ error: "You don't have access to this workspace" });
+        }
+
+        const status = workspace.icpJob?.status;
+        if (status === "running") {
+            return res
+                .status(409)
+                .json({ error: "The analysis is still running — wait for it to finish", workspace });
+        }
+        if (status === "queued") {
+            await icpQueue.remove(String(workspace._id)).catch(() => {});
+        }
+
+        workspace.icpJob = { ...IDLE_JOB };
+        await workspace.save();
+
+        res.status(200).json({ message: "Draft discarded", workspace });
     } catch (error) {
         return notFoundOr500(res, error);
     }
@@ -163,6 +307,7 @@ const deleteWorkspace = async (req, res) => {
             return res.status(403).json({ error: "Only the owner can delete this workspace" });
         }
 
+        await icpQueue.remove(String(workspace._id)).catch(() => {});
         await workspace.deleteOne();
         await User.updateMany(
             { workspaces: workspace._id },
@@ -178,8 +323,11 @@ const deleteWorkspace = async (req, res) => {
 export {
     getUserWorkspaces,
     createWorkspace,
-    addDomain,
+    startAnalysis,
+    getIcpJob,
+    discardIcpJob,
     getWorkspaceDetails,
     updateWorkspace,
     deleteWorkspace,
+    removeMember,
 };

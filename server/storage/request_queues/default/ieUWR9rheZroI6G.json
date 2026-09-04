@@ -1,0 +1,9 @@
+{
+	"id": "ieUWR9rheZroI6G",
+	"json": "{\"id\":\"ieUWR9rheZroI6G\",\"url\":\"https://claude.com/docs/claude-tag/admins/connections/gitlab\",\"loadedUrl\":\"https://claude.com/docs/claude-tag/admins/connections/gitlab\",\"uniqueKey\":\"https://claude.com/docs/claude-tag/admins/connections/gitlab\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:38:53.150Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://claude.com/docs/claude-tag/admins/connections/gitlab",
+	"url": "https://claude.com/docs/claude-tag/admins/connections/gitlab"
+}

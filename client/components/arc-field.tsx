@@ -3,12 +3,19 @@
  * emitting signal arcs). Purely decorative — colour comes from `currentColor`,
  * so callers set opacity via a `text-*` class.
  */
-export function ArcField({ className }: { className?: string }) {
+export function ArcField({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   return (
     <svg
       aria-hidden
       viewBox="0 0 400 400"
       className={className}
+      style={style}
       fill="none"
       stroke="currentColor"
       strokeWidth="1.5"

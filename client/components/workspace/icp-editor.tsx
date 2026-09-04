@@ -4,10 +4,12 @@ import { useCallback, useMemo, useState } from "react";
 import { CheckIcon, CircleAlertIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { safeColor } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type {
   Icp,
+  IcpBrandIdentity,
   IcpCompanyOverview,
   IcpCustomInsight,
   IcpFirmographics,
@@ -263,6 +265,39 @@ function TagField({
   );
 }
 
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value?: string;
+  onChange: (v: string) => void;
+}) {
+  const safe = safeColor(value);
+  return (
+    <Labeled label={label}>
+      <div className="flex items-center gap-2">
+        <span
+          aria-hidden
+          className="size-9 shrink-0 rounded-lg border border-input bg-[repeating-conic-gradient(var(--muted)_0_25%,transparent_0_50%)] bg-size-[10px_10px]"
+        >
+          <span
+            className="block size-full rounded-[inherit]"
+            style={safe ? { backgroundColor: safe } : undefined}
+          />
+        </span>
+        <Input
+          className="h-9 font-mono text-xs"
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="#1e40af"
+        />
+      </div>
+    </Labeled>
+  );
+}
+
 function Section({
   title,
   desc,
@@ -294,6 +329,7 @@ function FormEditor({ value, onChange }: { value: Icp; onChange: (v: Icp) => voi
   const pricing: IcpPricingInsights = co.pricing_model_insights ?? {};
   const sig = value.technical_and_buying_signals ?? {};
   const out = value.outreach_strategy ?? {};
+  const brand: IcpBrandIdentity = value.brand_identity ?? {};
   const personas = value.buyer_personas ?? [];
   const insights = value.custom_ai_insights ?? [];
 
@@ -309,6 +345,8 @@ function FormEditor({ value, onChange }: { value: Icp; onChange: (v: Icp) => voi
     onChange({ ...value, technical_and_buying_signals: { ...sig, ...p } });
   const patchOut = (p: Partial<typeof out>) =>
     onChange({ ...value, outreach_strategy: { ...out, ...p } });
+  const patchBrand = (p: Partial<IcpBrandIdentity>) =>
+    onChange({ ...value, brand_identity: { ...brand, ...p } });
 
   const setPersonas = (next: IcpPersona[]) => onChange({ ...value, buyer_personas: next });
   const patchPersona = (i: number, p: Partial<IcpPersona>) =>
@@ -559,6 +597,55 @@ function FormEditor({ value, onChange }: { value: Icp; onChange: (v: Icp) => voi
           label="Spam-safe value angles"
           values={out.spam_safe_value_angles}
           onChange={(v) => patchOut({ spam_safe_value_angles: v })}
+        />
+      </Section>
+
+      <Section title="Brand & design" desc="The look of the site — used to theme this workspace's cards.">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField
+            label="Favicon URL"
+            value={brand.favicon_url}
+            onChange={(v) => patchBrand({ favicon_url: v })}
+            placeholder="https://acme.com/favicon.ico"
+          />
+          <TextField
+            label="Logo URL"
+            value={brand.logo_url}
+            onChange={(v) => patchBrand({ logo_url: v })}
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ColorField label="Primary color" value={brand.primary_color} onChange={(v) => patchBrand({ primary_color: v })} />
+          <ColorField label="Accent color" value={brand.accent_color} onChange={(v) => patchBrand({ accent_color: v })} />
+          <ColorField label="Secondary color" value={brand.secondary_color} onChange={(v) => patchBrand({ secondary_color: v })} />
+          <ColorField label="Background color" value={brand.background_color} onChange={(v) => patchBrand({ background_color: v })} />
+          <ColorField label="Text color" value={brand.text_color} onChange={(v) => patchBrand({ text_color: v })} />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField
+            label="Theme"
+            hint="e.g. light, dark, light with dark hero"
+            value={brand.theme}
+            onChange={(v) => patchBrand({ theme: v })}
+          />
+          <TextField
+            label="Typography"
+            hint="Primary font family"
+            value={brand.typography}
+            onChange={(v) => patchBrand({ typography: v })}
+          />
+        </div>
+        <TagField
+          label="Design style"
+          hint="e.g. minimal, corporate, playful, glassmorphism"
+          values={brand.design_style}
+          onChange={(v) => patchBrand({ design_style: v })}
+        />
+        <AreaField
+          label="Logo description"
+          rows={2}
+          value={brand.logo_description}
+          onChange={(v) => patchBrand({ logo_description: v })}
         />
       </Section>
 

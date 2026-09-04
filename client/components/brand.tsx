@@ -1,15 +1,15 @@
 import Link from "next/link";
 
+import { LogoMark } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import { ROUTES } from "@/lib/auth";
 
 export const BRAND_NAME = "Signarion";
 
 /**
- * Solid ink glyph + wordmark. Links home unless `asLink={false}`.
- * Colours follow the theme tokens, so a `.dark`-scoped region inverts it for free.
- *
- * The mark: a broadcast node — one point emitting concentric signal arcs.
+ * Logo mark + wordmark. Links home unless `asLink={false}`.
+ * The mark carries its own fixed brand colours (see LogoMark) rather than
+ * theme tokens — it's the logo, not chrome.
  */
 export function Brand({
   asLink = true,
@@ -19,23 +19,10 @@ export function Brand({
   className?: string;
 }) {
   const inner = (
-    <span className={cn("group/brand inline-flex items-center gap-2.5", className)}>
-      <span
-        aria-hidden
-        className="grid size-8 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/brand:-rotate-6"
-      >
-        <svg viewBox="0 0 24 24" fill="none" className="size-4.5">
-          <circle cx="6.5" cy="17.5" r="2.25" fill="currentColor" />
-          <path
-            d="M6 12.5a5.5 5.5 0 0 1 5.5 5.5M6 6.5A11.5 11.5 0 0 1 17.5 18"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
-      </span>
-      <span className="font-heading text-[0.95rem] font-semibold tracking-tight text-foreground">
-        {BRAND_NAME}
+    <span className={cn("group/brand inline-flex items-center gap-1.5", className)}>
+      <LogoMark className="h-7 transition-transform duration-200 rotate-19" />
+      <span className="font-heading text-[1rem] font-semibold tracking-tight text-foreground mt-2.5 -ml-2">
+        igna<span className="text-primary">rion</span>
       </span>
     </span>
   );

@@ -400,6 +400,84 @@ function extractInPageUrls() {
 
   return Array.from(paths);
 }
+
+/**
+ * Runs in the page. Pulls the site's visual identity from the <head> and a few
+ * computed styles: favicon, logo, brand colours, theme, typography.
+ */
+function extractBrandIdentity() {
+  const abs = (href) => {
+    try {
+      return href ? new URL(href, location.href).href : null;
+    } catch {
+      return null;
+    }
+  };
+  const attr = (sel, name) => {
+    const el = document.querySelector(sel);
+    return el ? el.getAttribute(name) : null;
+  };
+  const notNeutral = (c) =>
+    c && !/^rgba?\(0,\s*0,\s*0,\s*0\)$/.test(c) && c !== 'transparent' && c !== 'rgb(0, 0, 0)';
+
+  const favicon_url =
+    abs(attr('link[rel~="icon"]', 'href')) ||
+    abs(attr('link[rel="shortcut icon"]', 'href')) ||
+    abs(attr('link[rel="apple-touch-icon"]', 'href')) ||
+    abs('/favicon.ico');
+
+  const logoEl = document.querySelector(
+    'header img[alt*="logo" i], a[href="/"] img, [class*="logo" i] img, img[class*="logo" i], img[src*="logo" i]'
+  );
+  const logo_url = abs(logoEl && logoEl.getAttribute('src')) || abs(attr('meta[property="og:image"]', 'content'));
+
+  const themeColor = attr('meta[name="theme-color"]', 'content');
+
+  const rootStyle = getComputedStyle(document.documentElement);
+  const cssVar = (names) => {
+    for (const n of names) {
+      const v = rootStyle.getPropertyValue(n).trim();
+      if (v) return v;
+    }
+    return null;
+  };
+  const varPrimary = cssVar([
+    '--primary', '--color-primary', '--brand', '--brand-primary', '--brand-color',
+    '--accent', '--color-accent', '--main-color', '--theme-primary'
+  ]);
+  const varAccent = cssVar(['--accent', '--color-accent', '--secondary', '--color-secondary']);
+
+  const bodyStyle = getComputedStyle(document.body);
+  const btn = document.querySelector(
+    'button:not([disabled]), .btn, [class*="button" i], a[class*="btn" i], [role="button"]'
+  );
+  const btnBg = btn ? getComputedStyle(btn).backgroundColor : null;
+  const link = document.querySelector('main a[href], article a[href], a[href]');
+  const linkColor = link ? getComputedStyle(link).color : null;
+
+  const bg = bodyStyle.backgroundColor;
+  const isDark = (() => {
+    const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(bg || '');
+    if (!m) return false;
+    return (Number(m[1]) * 299 + Number(m[2]) * 587 + Number(m[3]) * 114) / 1000 < 128;
+  })();
+
+  return {
+    favicon_url,
+    logo_url,
+    primary_color:
+      varPrimary ||
+      themeColor ||
+      (notNeutral(btnBg) ? btnBg : null) ||
+      (notNeutral(linkColor) ? linkColor : null),
+    accent_color: varAccent || themeColor || (notNeutral(linkColor) ? linkColor : null),
+    background_color: notNeutral(bg) ? bg : null,
+    text_color: bodyStyle.color || null,
+    theme: isDark ? 'dark' : 'light',
+    typography:
+      (bodyStyle.fontFamily || '').split(',')[0].replace(/["']/g, '').trim() || null
+  };
+}
 /* eslint-enable */
 
 export async function crawlEntireWebsite(startUrl, options = {}) {
@@ -416,6 +494,7 @@ export async function crawlEntireWebsite(startUrl, options = {}) {
 
   const scrapedPages = [];
   const seenContent = new Set(); // normalized URLs already stored
+  let brandIdentity = null; // visual identity, captured once from the first page
 
   // ---- Pre-crawl discovery -----------------------------------------
   const [canonicalHost, robotsSitemaps] = await Promise.all([
@@ -521,6 +600,11 @@ export async function crawlEntireWebsite(startUrl, options = {}) {
       // C. Extract links + framework routes BEFORE cleaning the DOM.
       const inPageUrls = await page.evaluate(extractInPageUrls).catch(() => []);
 
+      // C2. Grab the site's visual identity once (from the first page reached).
+      if (!brandIdentity) {
+        brandIdentity = await page.evaluate(extractBrandIdentity).catch(() => null);
+      }
+
       // D. Clean DOM noise, then capture text.
       await page
         .evaluate(() => {
@@ -612,10 +696,16 @@ export async function crawlEntireWebsite(startUrl, options = {}) {
     aggregatedContent = aggregatedContent.substring(0, maxTokensTotal * 4) + '\n\n[TRUNCATED DUE TO SIZE LIMIT]';
   }
 
+  // Drop empty keys so callers can spread this straight onto an ICP.
+  const brand = brandIdentity
+    ? Object.fromEntries(Object.entries(brandIdentity).filter(([, v]) => v != null && v !== ''))
+    : null;
+
   return {
     pageCount: scrapedPages.length,
     scrapedPages,
-    aggregatedContent
+    aggregatedContent,
+    brandIdentity: brand
   };
 }
 

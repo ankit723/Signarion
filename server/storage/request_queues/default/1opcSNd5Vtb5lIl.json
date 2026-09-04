@@ -1,0 +1,9 @@
+{
+	"id": "1opcSNd5Vtb5lIl",
+	"json": "{\"id\":\"1opcSNd5Vtb5lIl\",\"url\":\"https://claude.com/docs/claude-science/admin-controls\",\"loadedUrl\":\"https://claude.com/docs/claude-science/admin-controls\",\"uniqueKey\":\"https://claude.com/docs/claude-science/admin-controls\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:35:36.418Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://claude.com/docs/claude-science/admin-controls",
+	"url": "https://claude.com/docs/claude-science/admin-controls"
+}

@@ -1,0 +1,40 @@
+{
+  "requestsFinished": 25,
+  "requestsFailed": 0,
+  "requestsRetries": 1,
+  "requestsFailedPerMinute": 0,
+  "requestsFinishedPerMinute": 24,
+  "requestMinDurationMillis": 2641,
+  "requestMaxDurationMillis": 8869,
+  "requestTotalFailedDurationMillis": 0,
+  "requestTotalFinishedDurationMillis": 115845,
+  "crawlerStartedAt": "2026-09-04T17:38:15.647Z",
+  "crawlerFinishedAt": "2026-09-04T17:39:16.284Z",
+  "statsPersistedAt": "2026-09-04T17:39:16.284Z",
+  "crawlerRuntimeMillis": 61687,
+  "crawlerLastStartTimestamp": 1788543494597,
+  "requestRetryHistogram": [
+    24,
+    1
+  ],
+  "statsId": "1",
+  "requestAvgFailedDurationMillis": null,
+  "requestAvgFinishedDurationMillis": 4634,
+  "requestTotalDurationMillis": 115845,
+  "requestsTotal": 25,
+  "requestsWithStatusCode": {
+    "200": 25
+  },
+  "errors": {},
+  "retryErrors": {
+    "/Users/ankitbiswas/Ongoing_Internships/salzelift/signal_based_outreach_v1/server/node_modules/@crawlee/playwright/internals/utils/playwright-utils.js:168:17": {
+      "missing error code": {
+        "TimeoutError": {
+          "page.goto: Timeout 45000ms exceeded.": {
+            "count": 1
+          }
+        }
+      }
+    }
+  }
+}

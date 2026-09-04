@@ -22,11 +22,20 @@ interface Props {
   domain: string;
   phase: AnalysisPhase;
   errorMessage?: string | null;
+  /** Small reassurance line under the domain (e.g. the live server stage). */
+  note?: string | null;
   onRetry?: () => void;
   onDismiss?: () => void;
 }
 
-export function DomainAnalysisLoader({ domain, phase, errorMessage, onRetry, onDismiss }: Props) {
+export function DomainAnalysisLoader({
+  domain,
+  phase,
+  errorMessage,
+  note,
+  onRetry,
+  onDismiss,
+}: Props) {
   // Auto-advance through the stages while running, but never past the last one —
   // the final stage stays "active" until the real request resolves. The parent
   // keys this component per run, so `stage` starts fresh at 0 each time.
@@ -78,6 +87,9 @@ export function DomainAnalysisLoader({ domain, phase, errorMessage, onRetry, onD
             <p className="mt-1 font-mono text-[0.7rem] uppercase tracking-widest text-muted-foreground">
               {domain}
             </p>
+            {note && !isError ? (
+              <p className="mt-1.5 text-xs text-muted-foreground">{note}</p>
+            ) : null}
           </div>
         </div>
       </div>

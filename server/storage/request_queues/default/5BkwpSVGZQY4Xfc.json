@@ -1,9 +1,0 @@
-{
-	"id": "5BkwpSVGZQY4Xfc",
-	"json": "{\"id\":\"5BkwpSVGZQY4Xfc\",\"url\":\"https://www.techmorphers.com/about\",\"loadedUrl\":\"https://www.techmorphers.com/about\",\"uniqueKey\":\"https://www.techmorphers.com/about\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T10:05:22.749Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://www.techmorphers.com/about",
-	"url": "https://www.techmorphers.com/about"
-}

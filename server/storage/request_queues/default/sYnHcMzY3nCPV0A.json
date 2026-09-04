@@ -1,0 +1,9 @@
+{
+	"id": "sYnHcMzY3nCPV0A",
+	"json": "{\"id\":\"sYnHcMzY3nCPV0A\",\"url\":\"https://claude.com/docs/claude-tag/admins/connections/linear\",\"loadedUrl\":\"https://claude.com/docs/claude-tag/admins/connections/linear\",\"uniqueKey\":\"https://claude.com/docs/claude-tag/admins/connections/linear\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:38:55.288Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://claude.com/docs/claude-tag/admins/connections/linear",
+	"url": "https://claude.com/docs/claude-tag/admins/connections/linear"
+}

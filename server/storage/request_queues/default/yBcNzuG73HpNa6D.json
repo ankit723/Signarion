@@ -1,0 +1,9 @@
+{
+	"id": "yBcNzuG73HpNa6D",
+	"json": "{\"id\":\"yBcNzuG73HpNa6D\",\"url\":\"https://claude.com/docs/claude-tag/admins/connections/custom\",\"loadedUrl\":\"https://claude.com/docs/claude-tag/admins/connections/custom\",\"uniqueKey\":\"https://claude.com/docs/claude-tag/admins/connections/custom\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:38:44.276Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://claude.com/docs/claude-tag/admins/connections/custom",
+	"url": "https://claude.com/docs/claude-tag/admins/connections/custom"
+}

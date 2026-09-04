@@ -1,7 +1,7 @@
 import {Router} from "express"
 import { authLimiter } from "../utils/rate-limiter.js"
 import authenticate from "../middlewares/auth.middleware.js"
-import { accountSettings, forgotPassword, login, me, register, verify } from "../controllers/auth.controller.js"
+import { accountSettings, deleteAccount, forgotPassword, login, me, register, verify } from "../controllers/auth.controller.js"
 
 const authRoutes = Router()
 
@@ -11,6 +11,7 @@ authRoutes.post("/forgot-password", authLimiter, forgotPassword)
 
 authRoutes.get("/me", authenticate, me)
 authRoutes.get("/verify", authenticate, verify)
-authRoutes.get("/account-settings", authenticate, accountSettings)
+authRoutes.patch("/account-settings", authenticate, accountSettings)
+authRoutes.delete("/account", authenticate, deleteAccount)
 
 export default authRoutes

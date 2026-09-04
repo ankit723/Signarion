@@ -1,0 +1,9 @@
+{
+	"id": "dtfVg4v5GHfDdj1",
+	"json": "{\"id\":\"dtfVg4v5GHfDdj1\",\"url\":\"https://claude.com/docs/claude-science/tools-and-environments\",\"loadedUrl\":\"https://claude.com/docs/claude-science/tools-and-environments\",\"uniqueKey\":\"https://claude.com/docs/claude-science/tools-and-environments\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:38:23.480Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://claude.com/docs/claude-science/tools-and-environments",
+	"url": "https://claude.com/docs/claude-science/tools-and-environments"
+}

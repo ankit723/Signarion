@@ -258,7 +258,7 @@ function TagField({
           }}
           onBlur={() => text && add(text)}
           placeholder={list.length === 0 ? placeholder : ""}
-          className="min-w-[8rem] flex-1 bg-transparent px-1.5 py-1 text-sm outline-none placeholder:text-muted-foreground"
+          className="min-w-32 flex-1 bg-transparent px-1.5 py-1 text-sm outline-none placeholder:text-muted-foreground"
         />
       </div>
     </Labeled>

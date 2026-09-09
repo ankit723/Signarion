@@ -1,7 +1,10 @@
 import Invitation from "../models/invitation.model.js";
 import Workspace from "../models/workspace.model.js";
 import User from "../models/user.model.js";
-import emailQueue from "../utils/emailQueue.js";
+import { enqueueEmail } from "../utils/emailQueue.js";
+import { createLogger } from "../utils/logger.js";
+
+const log = createLogger("invitation.controller");
 
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -9,8 +12,14 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const canManage = (workspace, uid) => workspace.owner === uid;
 
 /** Turn a Mongo CastError into a clean 404, matching workspace.controller.js. */
-const notFoundOr500 = (res, error) => {
-    console.log(error);
+const notFoundOr500 = (res, error, req, operation) => {
+    log.error(`${operation} failed`, {
+        requestId: req?.id,
+        uid: req?.user?.uid,
+        workspaceId: req?.params?.workspaceId,
+        invitationId: req?.params?.invitationId,
+        error,
+    });
     if (error?.name === "CastError") {
         return res.status(404).json({ error: "Invitation not found" });
     }
@@ -28,10 +37,15 @@ const publicInvite = (inv) => ({
     respondedAt: inv.respondedAt ?? null,
 });
 
-async function sendInviteEmail({ to, workspaceName, inviterName, inviterEmail, token }) {
+/**
+ * Best effort: the invitation row is the source of truth, so a Redis/queue
+ * problem must not turn a successful invite into a 500. Returns the enqueue
+ * result so the caller can tell the user the email didn't go out.
+ */
+async function sendInviteEmail({ to, workspaceName, inviterName, inviterEmail, token }, context = {}) {
     const link = `${CLIENT_URL}/invitations/${token}`;
     const inviter = inviterName || inviterEmail || "Someone";
-    await emailQueue.add("sendEmail", {
+    return enqueueEmail({
         to,
         subject: `${inviter} invited you to "${workspaceName}" on Signarion`,
         html: `
@@ -39,7 +53,7 @@ async function sendInviteEmail({ to, workspaceName, inviterName, inviterEmail, t
       <p><a href="${link}">View invitation</a></p>
       <p>If you don't have a Signarion account yet, you can create one from that link — the invite will be waiting for you.</p>
     `,
-    });
+    }, { kind: "invitation", ...context });
 }
 
 /* ------------------------------------------------------------------ */
@@ -47,6 +61,7 @@ async function sendInviteEmail({ to, workspaceName, inviterName, inviterEmail, t
 /* ------------------------------------------------------------------ */
 
 const createInvitation = async (req, res) => {
+    const OPERATION = "createInvitation";
     try {
         const email = (req.body?.email ?? "").trim().toLowerCase();
         if (!email || !EMAIL_RE.test(email)) {
@@ -89,21 +104,38 @@ const createInvitation = async (req, res) => {
         const inviter = await User.findOne({ firebaseUid: req.user.uid })
             .select("displayName email")
             .lean();
-        sendInviteEmail({
-            to: email,
-            workspaceName: workspace.name,
-            inviterName: inviter?.displayName,
-            inviterEmail: inviter?.email ?? req.user.email,
-            token: invitation.token,
-        }).catch((err) => console.error("[invitations] failed to send invite email:", err.message));
+        const emailResult = await sendInviteEmail(
+            {
+                to: email,
+                workspaceName: workspace.name,
+                inviterName: inviter?.displayName,
+                inviterEmail: inviter?.email ?? req.user.email,
+                token: invitation.token,
+            },
+            { requestId: req.id, invitationId: String(invitation._id) },
+        );
 
-        res.status(201).json({ message: "Invitation sent", invitation: publicInvite(invitation) });
+        log.info("invitation created", {
+            requestId: req.id,
+            invitationId: String(invitation._id),
+            workspaceId: String(workspace._id),
+            emailQueued: emailResult.ok,
+        });
+
+        res.status(201).json({
+            message: emailResult.ok
+                ? "Invitation sent"
+                : "Invitation created, but the email could not be sent. Try resending it.",
+            emailQueued: emailResult.ok,
+            invitation: publicInvite(invitation),
+        });
     } catch (error) {
-        return notFoundOr500(res, error);
+        return notFoundOr500(res, error, req, OPERATION);
     }
 };
 
 const listWorkspaceInvitations = async (req, res) => {
+    const OPERATION = "listWorkspaceInvitations";
     try {
         const workspace = await Workspace.findById(req.params.workspaceId).select("owner");
         if (!workspace) {
@@ -119,11 +151,12 @@ const listWorkspaceInvitations = async (req, res) => {
 
         res.status(200).json({ invitations: invitations.map(publicInvite) });
     } catch (error) {
-        return notFoundOr500(res, error);
+        return notFoundOr500(res, error, req, OPERATION);
     }
 };
 
 const cancelInvitation = async (req, res) => {
+    const OPERATION = "cancelInvitation";
     try {
         const workspace = await Workspace.findById(req.params.workspaceId).select("owner");
         if (!workspace) {
@@ -143,11 +176,12 @@ const cancelInvitation = async (req, res) => {
 
         res.status(200).json({ message: "Invitation cancelled" });
     } catch (error) {
-        return notFoundOr500(res, error);
+        return notFoundOr500(res, error, req, OPERATION);
     }
 };
 
 const resendInvitation = async (req, res) => {
+    const OPERATION = "resendInvitation";
     try {
         const workspace = await Workspace.findById(req.params.workspaceId);
         if (!workspace) {
@@ -169,17 +203,30 @@ const resendInvitation = async (req, res) => {
         const inviter = await User.findOne({ firebaseUid: req.user.uid })
             .select("displayName email")
             .lean();
-        await sendInviteEmail({
-            to: invitation.email,
-            workspaceName: workspace.name,
-            inviterName: inviter?.displayName,
-            inviterEmail: inviter?.email ?? req.user.email,
-            token: invitation.token,
-        });
+        const emailResult = await sendInviteEmail(
+            {
+                to: invitation.email,
+                workspaceName: workspace.name,
+                inviterName: inviter?.displayName,
+                inviterEmail: inviter?.email ?? req.user.email,
+                token: invitation.token,
+            },
+            { requestId: req.id, invitationId: String(invitation._id) },
+        );
 
+        if (!emailResult.ok) {
+            log.error("invitation resend could not be queued", {
+                requestId: req.id,
+                invitationId: String(invitation._id),
+                error: emailResult.error,
+            });
+            return res.status(503).json({ error: "Could not send the invitation email right now" });
+        }
+
+        log.info("invitation resent", { requestId: req.id, invitationId: String(invitation._id) });
         res.status(200).json({ message: "Invitation resent" });
     } catch (error) {
-        return notFoundOr500(res, error);
+        return notFoundOr500(res, error, req, OPERATION);
     }
 };
 
@@ -215,7 +262,7 @@ const getInvitationByToken = async (req, res) => {
             },
         });
     } catch (error) {
-        console.log(error);
+        log.error("getInvitationByToken failed", { requestId: req.id, error });
         res.status(500).json({ error: error.message });
     }
 };
@@ -253,12 +300,13 @@ const listMyInvitations = async (req, res) => {
                 })),
         });
     } catch (error) {
-        console.log(error);
+        log.error("listMyInvitations failed", { requestId: req.id, uid: req.user?.uid, error });
         res.status(500).json({ error: error.message });
     }
 };
 
 const acceptInvitation = async (req, res) => {
+    const OPERATION = "acceptInvitation";
     try {
         const invitation = await Invitation.findById(req.params.invitationId);
         if (!invitation) {
@@ -293,11 +341,12 @@ const acceptInvitation = async (req, res) => {
 
         res.status(200).json({ message: "Invitation accepted", workspaceId: workspace._id });
     } catch (error) {
-        return notFoundOr500(res, error);
+        return notFoundOr500(res, error, req, OPERATION);
     }
 };
 
 const declineInvitation = async (req, res) => {
+    const OPERATION = "declineInvitation";
     try {
         const invitation = await Invitation.findById(req.params.invitationId);
         if (!invitation) {
@@ -316,7 +365,7 @@ const declineInvitation = async (req, res) => {
 
         res.status(200).json({ message: "Invitation declined" });
     } catch (error) {
-        return notFoundOr500(res, error);
+        return notFoundOr500(res, error, req, OPERATION);
     }
 };
 

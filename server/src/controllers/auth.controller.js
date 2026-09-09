@@ -1,9 +1,12 @@
 import { auth } from "../utils/firebase.js";
-import redis from "../utils/redis.js";
+import { cacheDel } from "../utils/redis.js";
 import User from "../models/user.model.js";
 import Workspace from "../models/workspace.model.js";
 import Invitation from "../models/invitation.model.js";
-import emailQueue from "../utils/emailQueue.js";
+import { enqueueEmail } from "../utils/emailQueue.js";
+import { createLogger } from "../utils/logger.js";
+
+const log = createLogger("auth.controller");
 
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
 const SESSION_TTL_SECONDS = 86400;
@@ -56,17 +59,33 @@ const register = async (req, res) => {
     );
     const verificationLink = buildAppActionLink(firebaseLink, "verifyEmail");
 
-    await emailQueue.add("sendEmail", {
-      to: email,
-      subject: "Verify your email",
-      html: `<p>Welcome! Confirm your email address by clicking <a href="${verificationLink}">this link</a>.</p>`,
+    // Best effort: the account exists either way, so a queue outage must not
+    // turn a successful signup into a 500.
+    const emailResult = await enqueueEmail(
+      {
+        to: email,
+        subject: "Verify your email",
+        html: `<p>Welcome! Confirm your email address by clicking <a href="${verificationLink}">this link</a>.</p>`,
+      },
+      { requestId: req.id, kind: "verifyEmail", uid: userRecord.uid },
+    );
+
+    log.info("account registered", {
+      requestId: req.id,
+      uid: userRecord.uid,
+      email,
+      verificationEmailQueued: emailResult.ok,
     });
 
     return res.status(201).json({
-      message: "Account created. Check your inbox to verify your email.",
+      message: emailResult.ok
+        ? "Account created. Check your inbox to verify your email."
+        : "Account created, but we couldn't send the verification email. Request a new one from your account settings.",
+      verificationEmailQueued: emailResult.ok,
       user: newUser,
     });
   } catch (error) {
+    log.error("register failed", { requestId: req.id, email, code: error?.code, error });
     if (error.code === "auth/email-already-exists") {
       return res
         .status(409)
@@ -84,6 +103,7 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    log.warn("login rejected: missing bearer token", { requestId: req.id });
     return res.status(401).json({ error: "Missing Bearer token" });
   }
 
@@ -100,8 +120,10 @@ const login = async (req, res) => {
       emailVerified: userRecord.emailVerified,
     };
 
+    log.info("login succeeded", { requestId: req.id, uid: userRecord.uid });
     return res.status(200).json({ message: "Authenticated successfully", user: sessionData });
   } catch (error) {
+    log.warn("login failed", { requestId: req.id, code: error?.code, error: error?.message });
     return res.status(401).json({ error: "Invalid token" });
   }
 };
@@ -124,8 +146,16 @@ const me = async (req, res) => {
       metadata: userRecord.metadata,
     };
 
+    if (!dbUser) {
+      log.warn("no Mongo profile for authenticated user", {
+        requestId: req.id,
+        uid: req.user.uid,
+      });
+    }
+
     return res.status(200).json({ user: userProfile });
   } catch (error) {
+    log.error("me failed", { requestId: req.id, uid: req.user?.uid, code: error?.code, error });
     return res.status(500).json({ error: "Failed to fetch user profile" });
   }
 };
@@ -145,15 +175,26 @@ const forgotPassword = async (req, res) => {
     );
     const resetLink = buildAppActionLink(firebaseLink, "resetPassword");
 
-    await emailQueue.add("sendEmail", {
-      to: email,
-      subject: "Reset your password",
-      html: `<p>We received a request to reset your password. Click <a href="${resetLink}">this link</a> to choose a new one. If you didn't ask for this, you can ignore this email.</p>`,
-    });
+    const emailResult = await enqueueEmail(
+      {
+        to: email,
+        subject: "Reset your password",
+        html: `<p>We received a request to reset your password. Click <a href="${resetLink}">this link</a> to choose a new one. If you didn't ask for this, you can ignore this email.</p>`,
+      },
+      { requestId: req.id, kind: "resetPassword" },
+    );
 
+    log.info("password reset requested", { requestId: req.id, email, queued: emailResult.ok });
     return res.status(200).json(genericResponse);
   } catch (error) {
-    // Never reveal whether the account exists.
+    // The response stays generic so we never reveal whether the account exists,
+    // but the log records what actually went wrong.
+    log.warn("forgotPassword failed (responding generically)", {
+      requestId: req.id,
+      email,
+      code: error?.code,
+      error: error?.message,
+    });
     return res.status(200).json(genericResponse);
   }
 };
@@ -180,14 +221,28 @@ const verify = async (req, res) => {
     );
     const verificationLink = buildAppActionLink(firebaseLink, "verifyEmail");
 
-    await emailQueue.add("sendEmail", {
-      to: dbUser.email,
-      subject: "Verify your email",
-      html: `<p>Confirm your email address by clicking <a href="${verificationLink}">this link</a>.</p>`,
-    });
+    const emailResult = await enqueueEmail(
+      {
+        to: dbUser.email,
+        subject: "Verify your email",
+        html: `<p>Confirm your email address by clicking <a href="${verificationLink}">this link</a>.</p>`,
+      },
+      { requestId: req.id, kind: "verifyEmail", uid: req.user.uid },
+    );
 
+    if (!emailResult.ok) {
+      log.error("verification email could not be queued", {
+        requestId: req.id,
+        uid: req.user.uid,
+        error: emailResult.error,
+      });
+      return res.status(503).json({ error: "Could not send the verification email right now" });
+    }
+
+    log.info("verification email queued", { requestId: req.id, uid: req.user.uid });
     return res.status(200).json({ message: "Verification email sent." });
   } catch (error) {
+    log.error("verify failed", { requestId: req.id, uid: req.user?.uid, code: error?.code, error });
     return res
       .status(500)
       .json({ error: "Failed to generate verification link" });
@@ -240,8 +295,8 @@ const accountSettings = async (req, res) => {
       await User.updateOne({ firebaseUid: uid }, mongoPatch);
     }
 
-    // Invalidate Redis caches to maintain consistency across services
-    await redis.del(`session:user:${uid}`);
+    // Best effort cache invalidation — never blocks the response.
+    await cacheDel(`session:user:${uid}`);
 
     // Revoke all existing refresh tokens if password or email changed — the
     // client signs the user out right after and asks them to sign back in.
@@ -257,15 +312,24 @@ const accountSettings = async (req, res) => {
           actionCodeSettings,
         );
         const verificationLink = buildAppActionLink(firebaseLink, "verifyEmail");
-        await emailQueue.add("sendEmail", {
-          to: updateFields.email,
-          subject: "Verify your new email",
-          html: `<p>Confirm your new email address by clicking <a href="${verificationLink}">this link</a>.</p>`,
-        });
+        await enqueueEmail(
+          {
+            to: updateFields.email,
+            subject: "Verify your new email",
+            html: `<p>Confirm your new email address by clicking <a href="${verificationLink}">this link</a>.</p>`,
+          },
+          { requestId: req.id, kind: "verifyNewEmail", uid },
+        );
       } catch (linkError) {
-        console.error("Failed to send re-verification email:", linkError.message);
+        log.error("failed to send re-verification email", { requestId: req.id, uid, error: linkError });
       }
     }
+
+    log.info("account settings updated", {
+      requestId: req.id,
+      uid,
+      fields: Object.keys(updateFields),
+    });
 
     return res.status(200).json({
       message: "Account settings updated successfully.",
@@ -277,6 +341,7 @@ const accountSettings = async (req, res) => {
       },
     });
   } catch (error) {
+    log.error("accountSettings failed", { requestId: req.id, uid, code: error?.code, error });
     if (error.code === "auth/email-already-exists") {
       return res.status(409).json({ error: "An account with that email already exists." });
     }
@@ -315,11 +380,13 @@ const deleteAccount = async (req, res) => {
     }
 
     await User.deleteOne({ firebaseUid: uid });
-    await redis.del(`session:user:${uid}`);
+    await cacheDel(`session:user:${uid}`);
     await auth.deleteUser(uid);
 
+    log.info("account deleted", { requestId: req.id, uid });
     return res.status(200).json({ message: "Account deleted." });
   } catch (error) {
+    log.error("deleteAccount failed", { requestId: req.id, uid, code: error?.code, error });
     return res.status(500).json({ error: error.message });
   }
 };

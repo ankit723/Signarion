@@ -1,9 +1,0 @@
-{
-	"id": "J2b1FhBPY2RutnO",
-	"json": "{\"id\":\"J2b1FhBPY2RutnO\",\"url\":\"https://claude.com/docs/claude-science/monitor-usage\",\"loadedUrl\":\"https://claude.com/docs/claude-science/monitor-usage\",\"uniqueKey\":\"https://claude.com/docs/claude-science/monitor-usage\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:35:57.386Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://claude.com/docs/claude-science/monitor-usage",
-	"url": "https://claude.com/docs/claude-science/monitor-usage"
-}

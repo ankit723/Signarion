@@ -1,9 +1,0 @@
-{
-	"id": "89vIFu1YadUkO4k",
-	"json": "{\"id\":\"89vIFu1YadUkO4k\",\"url\":\"https://claude.com/docs/claude-science/connectors-and-skills\",\"loadedUrl\":\"https://claude.com/docs/claude-science/connectors-and-skills\",\"uniqueKey\":\"https://claude.com/docs/claude-science/connectors-and-skills\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:35:46.487Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://claude.com/docs/claude-science/connectors-and-skills",
-	"url": "https://claude.com/docs/claude-science/connectors-and-skills"
-}

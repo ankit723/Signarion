@@ -1,9 +1,0 @@
-{
-	"id": "kbItnpYq61sSc9m",
-	"json": "{\"id\":\"kbItnpYq61sSc9m\",\"url\":\"https://claude.com/docs/claude-tag/admins/connections/salesforce\",\"loadedUrl\":\"https://claude.com/docs/claude-tag/admins/connections/salesforce\",\"uniqueKey\":\"https://claude.com/docs/claude-tag/admins/connections/salesforce\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:38:58.444Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://claude.com/docs/claude-tag/admins/connections/salesforce",
-	"url": "https://claude.com/docs/claude-tag/admins/connections/salesforce"
-}

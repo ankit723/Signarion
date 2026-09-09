@@ -1,9 +1,0 @@
-{
-	"id": "TzLx39y9sKd8Yy0",
-	"json": "{\"id\":\"TzLx39y9sKd8Yy0\",\"url\":\"https://claude.com/docs/claude-science/custom-connectors\",\"loadedUrl\":\"https://claude.com/docs/claude-science/custom-connectors\",\"uniqueKey\":\"https://claude.com/docs/claude-science/custom-connectors\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:35:48.765Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://claude.com/docs/claude-science/custom-connectors",
-	"url": "https://claude.com/docs/claude-science/custom-connectors"
-}

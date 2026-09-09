@@ -1,0 +1,9 @@
+{
+	"id": "zwYBL0jq8iUgdKy",
+	"json": "{\"id\":\"zwYBL0jq8iUgdKy\",\"url\":\"https://www.youtube.com/product/E_g_11vmftq6b\",\"loadedUrl\":\"https://www.youtube.com/product/E_g_11vmftq6b?pbp=ggECICU%3D\",\"uniqueKey\":\"https://www.youtube.com/product/E_g_11vmftq6b\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-07T19:19:10.879Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://www.youtube.com/product/E_g_11vmftq6b",
+	"url": "https://www.youtube.com/product/E_g_11vmftq6b"
+}

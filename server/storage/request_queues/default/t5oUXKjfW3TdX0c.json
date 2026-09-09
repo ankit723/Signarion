@@ -1,0 +1,9 @@
+{
+	"id": "t5oUXKjfW3TdX0c",
+	"json": "{\"id\":\"t5oUXKjfW3TdX0c\",\"url\":\"https://www.youtube.com/product/E_g_11nn39_zvw\",\"loadedUrl\":\"https://www.youtube.com/product/E_g_11nn39_zvw?pbp=ggECICU%3D\",\"uniqueKey\":\"https://www.youtube.com/product/E_g_11nn39_zvw\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-07T19:18:55.673Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://www.youtube.com/product/E_g_11nn39_zvw",
+	"url": "https://www.youtube.com/product/E_g_11nn39_zvw"
+}

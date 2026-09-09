@@ -1,9 +1,0 @@
-{
-	"id": "YEwMS3FhJ6lhGdP",
-	"json": "{\"id\":\"YEwMS3FhJ6lhGdP\",\"url\":\"https://claude.com/docs/claude-science/legal-and-compliance\",\"loadedUrl\":\"https://claude.com/docs/claude-science/legal-and-compliance\",\"uniqueKey\":\"https://claude.com/docs/claude-science/legal-and-compliance\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:35:53.616Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://claude.com/docs/claude-science/legal-and-compliance",
-	"url": "https://claude.com/docs/claude-science/legal-and-compliance"
-}

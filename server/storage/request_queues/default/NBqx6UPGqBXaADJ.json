@@ -1,9 +1,0 @@
-{
-	"id": "NBqx6UPGqBXaADJ",
-	"json": "{\"id\":\"NBqx6UPGqBXaADJ\",\"url\":\"https://claude.com/docs/claude-tag/admins/configure-github\",\"loadedUrl\":\"https://claude.com/docs/claude-tag/admins/configure-github\",\"uniqueKey\":\"https://claude.com/docs/claude-tag/admins/configure-github\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:38:34.901Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://claude.com/docs/claude-tag/admins/configure-github",
-	"url": "https://claude.com/docs/claude-tag/admins/configure-github"
-}

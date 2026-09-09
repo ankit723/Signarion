@@ -10,7 +10,6 @@ import { refreshTokens } from "@/lib/firebase";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8001/api",
-  timeout: 20_000,
 });
 
 api.interceptors.request.use((config) => {

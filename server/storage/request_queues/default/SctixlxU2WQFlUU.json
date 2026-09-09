@@ -1,9 +1,0 @@
-{
-	"id": "SctixlxU2WQFlUU",
-	"json": "{\"id\":\"SctixlxU2WQFlUU\",\"url\":\"https://claude.com/docs/claude-science/cloud-storage\",\"loadedUrl\":\"https://claude.com/docs/claude-science/cloud-storage\",\"uniqueKey\":\"https://claude.com/docs/claude-science/cloud-storage\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:35:40.232Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://claude.com/docs/claude-science/cloud-storage",
-	"url": "https://claude.com/docs/claude-science/cloud-storage"
-}

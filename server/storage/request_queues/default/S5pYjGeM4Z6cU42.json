@@ -1,9 +1,0 @@
-{
-	"id": "S5pYjGeM4Z6cU42",
-	"json": "{\"id\":\"S5pYjGeM4Z6cU42\",\"url\":\"https://claude.com/docs/claude-science/literature-access\",\"loadedUrl\":\"https://claude.com/docs/claude-science/literature-access\",\"uniqueKey\":\"https://claude.com/docs/claude-science/literature-access\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:35:54.206Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://claude.com/docs/claude-science/literature-access",
-	"url": "https://claude.com/docs/claude-science/literature-access"
-}

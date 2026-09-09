@@ -1,9 +1,0 @@
-{
-	"id": "Domj13FS12Wp6dw",
-	"json": "{\"id\":\"Domj13FS12Wp6dw\",\"url\":\"https://claude.com/docs/claude-science/command-line-settings\",\"loadedUrl\":\"https://claude.com/docs/claude-science/command-line-settings\",\"uniqueKey\":\"https://claude.com/docs/claude-science/command-line-settings\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:35:43.530Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://claude.com/docs/claude-science/command-line-settings",
-	"url": "https://claude.com/docs/claude-science/command-line-settings"
-}

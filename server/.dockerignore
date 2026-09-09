@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log*
+
+# Secrets — never bake these into the image.
+# Exception: serviceAccount.json is imported statically by src/utils/firebase.js,
+# so it is COPYed into the image at /app/serviceAccount.json by the Dockerfile.
+.env
+.env.*
+
+# Crawlee's on-disk scratch data (request queues, key-value stores).
+storage
+
+.git
+.gitignore
+Dockerfile
+.dockerignore
+README.md

@@ -1,14 +1,22 @@
 import User from "../models/user.model.js";
 import Workspace from "../models/workspace.model.js";
-import { enqueueIcpJob, icpQueue } from "../utils/icpQueue.js";
+import { enqueueIcpJob, removeIcpJob } from "../utils/icpQueue.js";
+import { createLogger } from "../utils/logger.js";
+
+const log = createLogger("workspace.controller");
 
 /** Owner or member (all are Firebase UID strings from req.user.uid). */
 const canAccess = (workspace, uid) =>
     workspace.owner === uid || (workspace.members ?? []).includes(uid);
 
 /** Turn a Mongo CastError on :workspaceId into a clean 404. */
-const notFoundOr500 = (res, error) => {
-    console.log(error);
+const notFoundOr500 = (res, error, req, operation) => {
+    log.error(`${operation} failed`, {
+        requestId: req?.id,
+        uid: req?.user?.uid,
+        workspaceId: req?.params?.workspaceId,
+        error,
+    });
     if (error?.name === "CastError") {
         return res.status(404).json({ error: "Workspace not found" });
     }
@@ -69,9 +77,15 @@ const getUserWorkspaces = async (req, res) => {
             },
         }));
 
+        log.info("workspaces listed", {
+            requestId: req.id,
+            uid,
+            owned: ownersWorkspaces.length,
+            member: memberWorkspacesWithOwner.length,
+        });
         res.status(200).json({ ownersWorkspaces, memberWorkspaces: memberWorkspacesWithOwner });
     } catch (error) {
-        console.log(error);
+        log.error("getUserWorkspaces failed", { requestId: req.id, uid: req.user?.uid, error });
         res.status(500).json({ error: error.message });
     }
 };
@@ -95,14 +109,20 @@ const createWorkspace = async (req, res) => {
             { $addToSet: { workspaces: workspace._id } },
         );
 
+        log.info("workspace created", {
+            requestId: req.id,
+            uid: req.user.uid,
+            workspaceId: String(workspace._id),
+        });
         res.status(201).json({ message: "Workspace Initialised", workspace });
     } catch (error) {
-        console.log(error);
+        log.error("createWorkspace failed", { requestId: req.id, uid: req.user?.uid, error });
         res.status(500).json({ error: error.message });
     }
 };
 
 const getWorkspaceDetails = async (req, res) => {
+    const OPERATION = "getWorkspaceDetails";
     try {
         const workspace = await Workspace.findById(req.params.workspaceId);
         if (!workspace) {
@@ -114,11 +134,12 @@ const getWorkspaceDetails = async (req, res) => {
         const members = await resolveMembers(workspace);
         res.status(200).json({ workspace, members });
     } catch (error) {
-        return notFoundOr500(res, error);
+        return notFoundOr500(res, error, req, OPERATION);
     }
 };
 
 const removeMember = async (req, res) => {
+    const OPERATION = "removeMember";
     try {
         const targetUid = req.params.memberUid;
 
@@ -145,11 +166,12 @@ const removeMember = async (req, res) => {
         const members = await resolveMembers(workspace);
         res.status(200).json({ message: "Member removed", workspace, members });
     } catch (error) {
-        return notFoundOr500(res, error);
+        return notFoundOr500(res, error, req, OPERATION);
     }
 };
 
 const updateWorkspace = async (req, res) => {
+    const OPERATION = "updateWorkspace";
     try {
         const { name, icp } = req.body ?? {};
 
@@ -191,7 +213,7 @@ const updateWorkspace = async (req, res) => {
 
         res.status(200).json({ message: "Workspace updated", workspace });
     } catch (error) {
-        return notFoundOr500(res, error);
+        return notFoundOr500(res, error, req, OPERATION);
     }
 };
 
@@ -200,6 +222,7 @@ const updateWorkspace = async (req, res) => {
  * run on a BullMQ worker and write the result to `workspace.icpJob`.
  */
 const startAnalysis = async (req, res) => {
+    const OPERATION = "startAnalysis";
     try {
         const rawDomain = (req.body?.domain ?? "").trim();
         if (!rawDomain) {
@@ -241,16 +264,42 @@ const startAnalysis = async (req, res) => {
         };
         await workspace.save();
 
-        await enqueueIcpJob(workspaceId, domain);
+        try {
+            await enqueueIcpJob(workspaceId, domain);
+        } catch (error) {
+            // The workspace is already marked "queued" — without this rollback a
+            // Redis outage leaves it stuck there with no worker ever picking it up.
+            log.error("failed to enqueue analysis — rolling icpJob back to failed", {
+                requestId: req.id,
+                workspaceId,
+                domain,
+                error,
+            });
+            workspace.icpJob = {
+                ...IDLE_JOB,
+                status: "failed",
+                domain,
+                error: "Could not start the analysis. Please try again.",
+                finishedAt: new Date(),
+            };
+            await workspace.save().catch((saveError) =>
+                log.error("rollback save failed", { requestId: req.id, workspaceId, error: saveError }),
+            );
+            return res
+                .status(503)
+                .json({ error: "Analysis service is unavailable right now", workspace });
+        }
 
+        log.info("analysis queued", { requestId: req.id, workspaceId, domain, uid: req.user.uid });
         res.status(202).json({ message: "Analysis started", workspace });
     } catch (error) {
-        return notFoundOr500(res, error);
+        return notFoundOr500(res, error, req, OPERATION);
     }
 };
 
 /** Lightweight poll target for the running analysis. */
 const getIcpJob = async (req, res) => {
+    const OPERATION = "getIcpJob";
     try {
         const workspace = await Workspace.findById(req.params.workspaceId).select(
             "owner members icpJob",
@@ -263,12 +312,13 @@ const getIcpJob = async (req, res) => {
         }
         res.status(200).json({ icpJob: workspace.icpJob ?? { ...IDLE_JOB } });
     } catch (error) {
-        return notFoundOr500(res, error);
+        return notFoundOr500(res, error, req, OPERATION);
     }
 };
 
 /** Drop a finished/failed draft (or cancel a still-queued job). */
 const discardIcpJob = async (req, res) => {
+    const OPERATION = "discardIcpJob";
     try {
         const workspace = await Workspace.findById(req.params.workspaceId);
         if (!workspace) {
@@ -285,7 +335,7 @@ const discardIcpJob = async (req, res) => {
                 .json({ error: "The analysis is still running — wait for it to finish", workspace });
         }
         if (status === "queued") {
-            await icpQueue.remove(String(workspace._id)).catch(() => {});
+            await removeIcpJob(workspace._id);
         }
 
         workspace.icpJob = { ...IDLE_JOB };
@@ -293,11 +343,12 @@ const discardIcpJob = async (req, res) => {
 
         res.status(200).json({ message: "Draft discarded", workspace });
     } catch (error) {
-        return notFoundOr500(res, error);
+        return notFoundOr500(res, error, req, OPERATION);
     }
 };
 
 const deleteWorkspace = async (req, res) => {
+    const OPERATION = "deleteWorkspace";
     try {
         const workspace = await Workspace.findById(req.params.workspaceId);
         if (!workspace) {
@@ -307,7 +358,7 @@ const deleteWorkspace = async (req, res) => {
             return res.status(403).json({ error: "Only the owner can delete this workspace" });
         }
 
-        await icpQueue.remove(String(workspace._id)).catch(() => {});
+        await removeIcpJob(workspace._id);
         await workspace.deleteOne();
         await User.updateMany(
             { workspaces: workspace._id },
@@ -316,7 +367,7 @@ const deleteWorkspace = async (req, res) => {
 
         res.status(200).json({ message: "Workspace deleted", workspace });
     } catch (error) {
-        return notFoundOr500(res, error);
+        return notFoundOr500(res, error, req, OPERATION);
     }
 };
 

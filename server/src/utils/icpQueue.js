@@ -1,83 +1,74 @@
-/**
- * Background ICP generation. Kicked off by PUT /api/workspace/:id, this queue
- * runs the crawl + model on a BullMQ worker (in-process, same pattern as the
- * email queue) so it survives the client disconnecting or navigating away.
- *
- * The worker only ever writes to `workspace.icpJob` — it never touches the live
- * `workspace.icp`. The user reviews `icpJob.draft` and saves it via PATCH.
- */
-import { Queue, Worker } from "bullmq";
+import { Queue } from "bullmq";
+import { createQueueConnection, QUEUE_PREFIX } from "./redis.js";
+import { createLogger, throttle } from "./logger.js";
+import { ICP_QUEUE_NAME } from "./queueNames.js";
 
-import redis from "./redis.js";
-import Workspace from "../models/workspace.model.js";
-import { crawlEntireWebsite } from "./scraper.js";
-import { generateICPFromScrapedData } from "./icpGenerator.js";
+const log = createLogger("icpQueue");
 
-export const ICP_QUEUE_NAME = "icpQueue";
+export { ICP_QUEUE_NAME };
 
-export const icpQueue = new Queue(ICP_QUEUE_NAME, { connection: redis });
+/** BullMQ re-emits the connection error on every retry — throttle it. */
+const logQueueError = (() => {
+  const emit = throttle((message, meta) => log.error(message, meta));
+  return (err) => emit("queue error", { error: err?.message, detail: err });
+})();
 
-/** Patch a subset of `workspace.icpJob` without disturbing the rest. */
-const patchJob = (workspaceId, patch) =>
-  Workspace.updateOne(
-    { _id: workspaceId },
-    { $set: Object.fromEntries(Object.entries(patch).map(([k, v]) => [`icpJob.${k}`, v])) }
-  );
+const connection = createQueueConnection("icpQueue");
 
-const worker = new Worker(
-  ICP_QUEUE_NAME,
-  async (job) => {
-    const { workspaceId, domain } = job.data;
+/** `null` when REDIS_URL is missing — see the note in emailQueue.js. */
+export const icpQueue = connection
+  ? new Queue(ICP_QUEUE_NAME, { connection, prefix: QUEUE_PREFIX })
+  : null;
 
-    await patchJob(workspaceId, { status: "running", stage: "Crawling the website", error: null });
+if (icpQueue) {
+  icpQueue.on("error", logQueueError);
+  log.info("icp queue initialised", { queue: ICP_QUEUE_NAME, prefix: QUEUE_PREFIX });
+} else {
+  log.error("icp queue disabled — REDIS_URL is not set");
+}
 
-    const crawl = await crawlEntireWebsite(`https://${domain}`, { maxPages: 25 });
+export const isIcpQueueAvailable = () => Boolean(icpQueue);
 
-    await patchJob(workspaceId, { stage: "Building the customer profile" });
+export async function enqueueIcpJob(workspaceId, domain) {
+  if (!icpQueue) {
+    log.error("cannot enqueue ICP job — queue unavailable", { workspaceId, domain });
+    throw new Error("ICP queue unavailable (REDIS_URL is not set)");
+  }
 
-    const icp = await generateICPFromScrapedData(crawl.aggregatedContent, domain);
-
-    if (crawl.brandIdentity && Object.keys(crawl.brandIdentity).length > 0) {
-      icp.brand_identity = { ...(icp.brand_identity ?? {}), ...crawl.brandIdentity };
-    }
-
-    await patchJob(workspaceId, {
-      status: "ready",
-      stage: null,
-      draft: icp,
-      error: null,
-      finishedAt: new Date(),
+  try {
+    const startedAt = Date.now();
+    const job = await icpQueue.add(
+      "analyze",
+      { workspaceId: String(workspaceId), domain },
+      {
+        jobId: String(workspaceId),
+        removeOnComplete: true,
+        removeOnFail: 50,
+        attempts: 1,
+      },
+    );
+    log.info("ICP job enqueued", {
+      jobId: job.id,
+      workspaceId: String(workspaceId),
+      domain,
+      durationMs: Date.now() - startedAt,
     });
-  },
-  { connection: redis, concurrency: 2 }
-);
+    return job;
+  } catch (error) {
+    log.error("failed to enqueue ICP job", { workspaceId: String(workspaceId), domain, error });
+    throw error;
+  }
+}
 
-worker.on("failed", (job, err) => {
-  if (!job) return;
-  console.error(`[icpQueue] job ${job.id} failed:`, err?.message);
-  void patchJob(job.data.workspaceId, {
-    status: "failed",
-    stage: null,
-    error: (err?.message || "The analysis failed.").slice(0, 500),
-    finishedAt: new Date(),
-  });
-});
-
-worker.on("error", (err) => console.error("[icpQueue] worker error:", err?.message));
-
-/**
- * Enqueue an analysis. `jobId` is the workspace id, so a second call while one
- * is still queued is a no-op; `removeOnComplete` frees the id for re-analysis.
- */
-export function enqueueIcpJob(workspaceId, domain) {
-  return icpQueue.add(
-    "analyze",
-    { workspaceId: String(workspaceId), domain },
-    {
-      jobId: String(workspaceId),
-      removeOnComplete: true,
-      removeOnFail: 50,
-      attempts: 1,
-    }
-  );
+/** Removes a job without ever throwing — callers only care that it's gone. */
+export async function removeIcpJob(workspaceId) {
+  if (!icpQueue) return false;
+  try {
+    await icpQueue.remove(String(workspaceId));
+    log.info("ICP job removed", { workspaceId: String(workspaceId) });
+    return true;
+  } catch (error) {
+    log.warn("failed to remove ICP job", { workspaceId: String(workspaceId), error: error?.message });
+    return false;
+  }
 }

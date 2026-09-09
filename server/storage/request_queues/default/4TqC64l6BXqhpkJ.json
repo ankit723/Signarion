@@ -1,9 +1,0 @@
-{
-	"id": "4TqC64l6BXqhpkJ",
-	"json": "{\"id\":\"4TqC64l6BXqhpkJ\",\"url\":\"https://claude.com/docs/claude-tag/admins/attach-to-scope\",\"loadedUrl\":\"https://claude.com/docs/claude-tag/admins/attach-to-scope\",\"uniqueKey\":\"https://claude.com/docs/claude-tag/admins/attach-to-scope\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:38:31.353Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://claude.com/docs/claude-tag/admins/attach-to-scope",
-	"url": "https://claude.com/docs/claude-tag/admins/attach-to-scope"
-}

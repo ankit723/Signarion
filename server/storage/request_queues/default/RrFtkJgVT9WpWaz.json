@@ -1,9 +1,0 @@
-{
-	"id": "RrFtkJgVT9WpWaz",
-	"json": "{\"id\":\"RrFtkJgVT9WpWaz\",\"url\":\"https://claude.com/docs/claude-tag/admins/connections/bigquery\",\"loadedUrl\":\"https://claude.com/docs/claude-tag/admins/connections/bigquery\",\"uniqueKey\":\"https://claude.com/docs/claude-tag/admins/connections/bigquery\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-09-04T17:38:47.714Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://claude.com/docs/claude-tag/admins/connections/bigquery",
-	"url": "https://claude.com/docs/claude-tag/admins/connections/bigquery"
-}
